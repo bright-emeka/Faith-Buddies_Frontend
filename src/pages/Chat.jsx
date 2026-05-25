@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { sendMessage, getChatHistory, setAuthToken } from '../services/api';
+import { sendMessage, getChatHistory } from '../services/api';
 import { auth } from '../services/firebase';
 
 const Chat = ({ onBack, selectedChatId }) => { 
@@ -8,22 +8,16 @@ const Chat = ({ onBack, selectedChatId }) => {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Initialize auth token and load chat history
   useEffect(() => {
     const initChat = async () => {
       try {
         const user = auth.currentUser;
         if (!user) return;
 
-        const token = await user.getIdToken();
-        setAuthToken(token);
-
-        // LOGIC: If it's NOT the AI Buddy, fetch history from the database
         if (selectedChatId && selectedChatId !== 'ai-buddy') {
           const history = await getChatHistory(user.uid);
           setMessages(history.messages || []);
         } else {
-          // If it's AI BUDDY, we start with a welcome message
           setMessages([
             {
               role: 'assistant',
@@ -33,13 +27,12 @@ const Chat = ({ onBack, selectedChatId }) => {
           ]);
         }
       } catch (err) {
-        // Renaming to 'err' and logging it clears the "unused variable" error
         console.error('Initialization error:', err);
       }
     };
 
     initChat();
-  }, [selectedChatId]); // Refetch if the chat target changes
+  }, [selectedChatId]);
 
   // Auto-scroll to bottom
   useEffect(() => {

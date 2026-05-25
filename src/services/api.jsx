@@ -2,8 +2,7 @@
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 
-// Create axios instance pointing to backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -46,15 +45,6 @@ const retryWithBackoff = async (fn, maxRetries = 3) => {
       const delay = Math.pow(2, attempt - 1) * 1000;
       await new Promise(resolve => setTimeout(resolve, delay));
     }
-  }
-};
-
-// Legacy support (keeps code intact if called elsewhere, but no longer strictly required)
-export const setAuthToken = (token) => {
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  } else {
-    delete api.defaults.headers.common['Authorization'];
   }
 };
 

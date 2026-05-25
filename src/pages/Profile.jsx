@@ -34,10 +34,8 @@ const Profile = () => {
   const [postContent, setPostContent] = useState('');
   const [postImage, setPostImage] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  
   const [avatarImage, setAvatarImage] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
 
   useEffect(() => {

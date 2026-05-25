@@ -1,7 +1,7 @@
 {
   "name": "bible-social-frontend",
   "version": "1.0.0",
-  "description": "Christian social app with AI Bible chat",
+  "description": "social app with AI chat",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,17 +12,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "axios": "^1.6.2",
+    "firebase": "^10.7.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^6.20.0",
-    "firebase": "^10.7.0",
-    "axios": "^1.6.2"
+    "react-router-dom": "^6.20.0"
   },
-
   "overrides": {
     "undici": "^6.13.0"
   },
-  
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.14",

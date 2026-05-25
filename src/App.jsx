@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { onAuthChange } from './services/auth.jsx';
-import { setAuthToken, createUserProfile } from './services/api.jsx';
+import { createUserProfile } from './services/api.jsx';
 import Login from './pages/Login.jsx';
 import Chat from './pages/Chat.jsx';
 import Feed from './pages/Feed.jsx';
@@ -20,34 +20,25 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthChange(async (authUser) => {
       if (authUser) {
-        // User is logged in
         setUser({
           uid: authUser.uid,
           email: authUser.email,
           displayName: authUser.displayName,
         });
 
-        // Get and set auth token for API calls
         try {
-          const token = await authUser.getIdToken();
-          setAuthToken(token);
-
-          // Create or get user profile
           await createUserProfile(authUser.uid, {
             name: authUser.displayName || authUser.email?.split('@')[0] || 'User',
             email: authUser.email,
           });
         } catch (error) {
-          console.error('Error setting up user:', error);
+          console.error('Error creating user profile:', error);
         }
       } else {
-        // User is logged out
         setUser(null);
-        setAuthToken(null);
         navigate('/login');
       }
       setLoading(false);
