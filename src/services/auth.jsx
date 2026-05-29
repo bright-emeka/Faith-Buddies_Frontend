@@ -5,8 +5,8 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { auth, db } from './firebase';
-import { setDoc, doc } from 'firebase/firestore';
+import { auth } from './firebase';
+import { syncUserWithBackend } from './api';
 
 // Sign up with email and password
 export const signUp = async (email, password, name, religion) => {
@@ -14,13 +14,12 @@ export const signUp = async (email, password, name, religion) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Save user data to Firestore
-    await setDoc(doc(db, 'users', user.uid), {
-      id: user.uid,
-      name: name,
-      email: email,
+    // Sync user data to MongoDB backend
+    const token = await user.getIdToken(true);
+    await syncUserWithBackend(token, {
+      name,
+      email,
       religion: religion || 'Christian',
-      createdAt: new Date().toISOString(),
     });
 
     return user;

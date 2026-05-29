@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://faith-buddies-back
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 second timeout to prevent hanging requests
+  timeout: 30000,
 });
 
 // 🔒 GLOBAL REQUEST INTERCEPTOR: Automatically attaches Firebase Token dynamically
@@ -17,7 +17,6 @@ api.interceptors.request.use(
       const user = auth.currentUser;
       
       if (user) {
-        // Automatically fetches the token (and auto-refreshes it if it expired)
         const token = await user.getIdToken();
         config.headers['Authorization'] = `Bearer ${token}`;
       }
@@ -30,6 +29,27 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Sync user to MongoDB backend after Firebase Auth signup
+export const syncUserWithBackend = async (token, userData) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/users/sync`,
+      userData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error syncing user to backend:', error.message || error);
+    throw new Error(error.response?.data?.error || 'Failed to sync user to backend');
+  }
+};
 
 // Retry logic for failed requests
 const retryWithBackoff = async (fn, maxRetries = 3) => {
@@ -79,7 +99,20 @@ export const getChatHistory = async (userId) => {
 
 // ===== USER ROUTES =====
 
-// Create or get user profile
+// Get current user's profile (authenticated via Bearer token)
+export const getCurrentUserProfile = async () => {
+  try {
+    const response = await retryWithBackoff(() =>
+      api.get('/api/users/profile')
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching current user profile:', error.message || error);
+    throw new Error(error.response?.data?.error || 'Failed to fetch profile');
+  }
+};
+
+// Create user profile
 export const createUserProfile = async (userId, data) => {
   try {
     const response = await retryWithBackoff(() =>

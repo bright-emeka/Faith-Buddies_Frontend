@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   getUserProfile, 
+  getCurrentUserProfile,
   createUserProfile,
   getUserPosts, 
   getFollowers, 
@@ -57,13 +58,22 @@ const Profile = () => {
     try {
       setLoading(true);
       
-      // 1. Try fetching existing MongoDB user profile data
-      const userData = await getUserProfile(userId);
+      // 1. For own profile, use /api/users/profile (authenticated endpoint)
+      // For other profiles, use /api/users/{userId}
+      let userData;
+      if (currentUser && currentUser.uid === userId) {
+        userData = await getCurrentUserProfile().catch(() => null);
+        if (!userData) {
+          userData = await getUserProfile(userId);
+        }
+      } else {
+        userData = await getUserProfile(userId);
+      }
       setUser(userData);
 
       // 2. Run other fetches in parallel if the user profile exists
       const [userPosts, followersList, followingList] = await Promise.all([
-        getUserPosts(userId).catch(() => []), // Catch failures gracefully
+        getUserPosts(userId).catch(() => []),
         getFollowers(userId).catch(() => []),
         getFollowing(userId).catch(() => [])
       ]);
@@ -81,9 +91,9 @@ const Profile = () => {
     } catch (error) {
       console.warn('Profile not found or loaded with errors. Checking fallback initialization...', error.message);
       
-      // 🌟 FALLBACK: If profile lookup fails (404), check if it's the current user's profile
+      // FALLBACK: If profile lookup fails (404), check if it's the current user's profile
       if (currentUser && currentUser.uid === userId) {
-        console.log("Initializing brand new MongoDB sync profile document...");
+        console.log("Initializing brand new MongoDB profile document...");
         try {
           const fallbackProfile = await createUserProfile(userId, {
             name: currentUser.displayName || currentUser.email?.split('@')[0] || 'New Believer',
@@ -99,7 +109,6 @@ const Profile = () => {
           setUser(null);
         }
       } else {
-        // If it's a 404 for another user, reset state cleanly to trigger "User not found"
         setUser(null);
       }
     } finally {

@@ -15,6 +15,17 @@
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
+  --header-gradient-start: #2c3e50;
+  --header-gradient-end: #34495e;
+  --header-nav-bg: #34495e;
+  --header-nav-item-color: #dfe6ef;
+  --header-nav-item-hover-color: #ffffff;
+  --header-nav-item-hover-bg: rgba(255, 255, 255, 0.08);
+  --header-nav-item-active-color: #ffffff;
+  --header-nav-item-active-border: #ffffff;
+  --header-brand-bar-bg: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
+  --header-brand-bar-color: #ffffff;
+
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
@@ -24,11 +35,8 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
+
 
 .dark {
   --text: #9ca3af;
@@ -42,6 +50,16 @@
   --social-bg: rgba(47, 48, 58, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  --header-gradient-start: #1a252f;
+  --header-gradient-end: #2c3e50;
+  --header-nav-bg: #2c3e50;
+  --header-nav-item-color: #bdc3c7;
+  --header-nav-item-hover-color: #ffffff;
+  --header-nav-item-hover-bg: rgba(255, 255, 255, 0.08);
+  --header-nav-item-active-color: #ffffff;
+  --header-nav-item-active-border: #ffffff;
+  --header-brand-bar-bg: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
+  --header-brand-bar-color: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,6 +75,16 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+    --header-gradient-start: #1a252f;
+    --header-gradient-end: #2c3e50;
+    --header-nav-bg: #2c3e50;
+    --header-nav-item-color: #bdc3c7;
+    --header-nav-item-hover-color: #ffffff;
+    --header-nav-item-hover-bg: rgba(255, 255, 255, 0.08);
+    --header-nav-item-active-color: #ffffff;
+    --header-nav-item-active-border: #ffffff;
+    --header-brand-bar-bg: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
+    --header-brand-bar-color: #ffffff;
   }
 
   #social .button-icon {
