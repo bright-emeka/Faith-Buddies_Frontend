@@ -1,7 +1,4 @@
-// Main App component - handles routing and auth state
 import React, { useState, useEffect } from 'react';
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { onAuthChange } from './services/auth.jsx';
 import { createUserProfile } from './services/api.jsx';
