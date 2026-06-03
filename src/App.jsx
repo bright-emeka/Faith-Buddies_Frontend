@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { onAuthChange } from './services/auth.jsx';
+import { useAuth } from './context/AuthContext';
 import { createUserProfile } from './services/api.jsx';
 import Login from './pages/Login.jsx';
 import Chat from './pages/Chat.jsx';
@@ -13,38 +13,25 @@ import Groups from './pages/Groups.jsx';
 import Header from './components/Header.jsx';
 import ChatHub from './pages/ChatHub.jsx';
 import { ThemeProvider } from './context/ThemeContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function AppContent() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (authUser) => {
-      if (authUser) {
-        setUser({
-          uid: authUser.uid,
-          email: authUser.email,
-          displayName: authUser.displayName,
+    if (user) {
+      try {
+        // Create user profile in backend if it doesn't exist
+        createUserProfile(user.uid, {
+          name: user.displayName || user.email?.split('@')[0] || 'User',
+          email: user.email,
         });
-
-        try {
-          await createUserProfile(authUser.uid, {
-            name: authUser.displayName || authUser.email?.split('@')[0] || 'User',
-            email: authUser.email,
-          });
-        } catch (error) {
-          console.error('Error creating user profile:', error);
-        }
-      } else {
-        setUser(null);
-        navigate('/login');
+      } catch (error) {
+        console.error('Error creating user profile:', error);
       }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, [navigate]);
+    }
+  }, [user]);
 
   const handleUserClick = (userId) => {
     navigate(`/profile/${userId}`);
@@ -63,7 +50,8 @@ function AppContent() {
             onUserClick={handleUserClick}
           />
           <main className="main-content">
-            <Routes>
+            <ProtectedRoute>
+              <Routes>
                 <Route path="/feed" element={<Feed />} />
                 <Route path="/chat" element={<ChatHub userEmail={user.email} />} />
                 <Route path="/notifications" element={<Notifications />} />
@@ -72,13 +60,14 @@ function AppContent() {
                 <Route path="/profile/:userId" element={<Profile />} />
                 <Route path="/discover" element={<Discover onUserClick={handleUserClick} />} />
                 <Route path="/" element={<Feed />} />
-            </Routes>
+              </Routes>
+            </ProtectedRoute>
           </main>
         </>
       ) : (
         <Routes>
-          <Route path="/login" element={<Login onLoginSuccess={() => {}} />} />
-          <Route path="*" element={<Login onLoginSuccess={() => {}} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Login />} />
         </Routes>
       )}
     </div>
@@ -89,7 +78,9 @@ function App() {
   return (
     <Router>
       <ThemeProvider>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </ThemeProvider>
     </Router>
   );

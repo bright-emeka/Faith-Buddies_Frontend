@@ -12,17 +12,16 @@ import {
   updateUserProfile,
   createPost,
 } from '../services/api';
-import { logOut } from '../services/auth';
-import { auth } from '../services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useAuth } from '../context/AuthContext';
 import Post from '../components/Post';
 import { useTheme } from '../context/ThemeContext';
 
 const Profile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
-  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
@@ -37,16 +36,8 @@ const Profile = () => {
   const [isPosting, setIsPosting] = useState(false);
   const [avatarImage, setAvatarImage] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [currentUser, setCurrentUser] = useState(auth.currentUser);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const isOwnProfile = currentUser && currentUser.uid === userId;
+  const isOwnProfile = user && user.uid === userId;
 
   const loadProfile = useCallback(async () => {
     if (!userId || userId === 'undefined') {
@@ -60,16 +51,16 @@ const Profile = () => {
       
       // 1. For own profile, use /api/users/profile (authenticated endpoint)
       // For other profiles, use /api/users/{userId}
-      let userData;
-      if (currentUser && currentUser.uid === userId) {
-        userData = await getCurrentUserProfile().catch(() => null);
-        if (!userData) {
-          userData = await getUserProfile(userId);
+      let profileData;
+      if (isOwnProfile) {
+        profileData = await getCurrentUserProfile().catch(() => null);
+        if (!profileData) {
+          profileData = await getUserProfile(userId);
         }
       } else {
-        userData = await getUserProfile(userId);
+        profileData = await getUserProfile(userId);
       }
-      setUser(userData);
+      setProfile(profileData);
 
       // 2. Run other fetches in parallel if the user profile exists
       const [userPosts, followersList, followingList] = await Promise.all([
@@ -83,7 +74,7 @@ const Profile = () => {
       setFollowing(followingList || []);
 
       // 3. Check follow status if it's someone else's profile
-      if (currentUser && currentUser.uid !== userId) {
+      if (user && !isOwnProfile) {
         const result = await checkFollowing(userId).catch(() => null);
         setIsFollowing(result?.following || false);
       }
@@ -92,29 +83,29 @@ const Profile = () => {
       console.warn('Profile not found or loaded with errors. Checking fallback initialization...', error.message);
       
       // FALLBACK: If profile lookup fails (404), check if it's the current user's profile
-      if (currentUser && currentUser.uid === userId) {
+      if (isOwnProfile) {
         console.log("Initializing brand new MongoDB profile document...");
         try {
-          const fallbackProfile = await createUserProfile(userId, {
-            name: currentUser.displayName || currentUser.email?.split('@')[0] || 'New Believer',
-            email: currentUser.email,
-            avatar: currentUser.photoURL || '',
+          const fallbackProfile = await createUserProfile(user.uid, {
+            name: user.displayName || user.email?.split('@')[0] || 'New Believer',
+            email: user.email,
+            avatar: user.avatar || '',
             bio: 'Faithful believer sharing wisdom and inspiration',
             religion: 'Christian'
           });
           
-          setUser(fallbackProfile);
+          setProfile(fallbackProfile);
         } catch (creationError) {
           console.error('Fatal: Failed to auto-initialize profile document:', creationError);
-          setUser(null);
+          setProfile(null);
         }
       } else {
-        setUser(null);
+        setProfile(null);
       }
     } finally {
       setLoading(false);
     }
-  }, [userId, currentUser]);
+  }, [userId, user]);
 
   useEffect(() => {
     loadProfile();
@@ -125,7 +116,7 @@ const Profile = () => {
       const result = await toggleFollow(userId);
       setIsFollowing(result.following);
       
-      setUser(prev => ({
+      setProfile(prev => ({
         ...prev,
         followersCount: result.following ? (prev.followersCount || 0) + 1 : (prev.followersCount || 1) - 1,
       }));
@@ -136,7 +127,7 @@ const Profile = () => {
 
   const handleLogout = async () => {
     try {
-      await logOut();
+      await logout();
       navigate('/login');
     } catch (error) {
       console.error('Error logging out:', error);
@@ -144,19 +135,21 @@ const Profile = () => {
   };
 
   const handleEdit = () => {
-    setEditForm({
-      name: user.name || '',
-      bio: user.bio || '',
-      avatar: user.avatar || '',
-      religion: user.religion || 'Christian',
-    });
-    setIsEditing(true);
+    if (profile) {
+      setEditForm({
+        name: profile.name || '',
+        bio: profile.bio || '',
+        avatar: profile.avatar || '',
+        religion: profile.religion || 'Christian',
+      });
+      setIsEditing(true);
+    }
   };
 
   const handleSaveEdit = async () => {
     try {
       await updateUserProfile(userId, editForm);
-      setUser(prev => ({ ...prev, ...editForm }));
+      setProfile(prev => ({ ...prev, ...editForm }));
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -198,7 +191,7 @@ const Profile = () => {
         setAvatarImage(avatarUrl);
         
         await updateUserProfile(userId, { avatar: avatarUrl });
-        setUser(prev => ({ ...prev, avatar: avatarUrl }));
+        setProfile(prev => ({ ...prev, avatar: avatarUrl }));
         
         e.target.value = '';
       } catch (error) {
@@ -219,7 +212,7 @@ const Profile = () => {
     );
   }
 
-  if (!user) {
+  if (!profile) {
     return (
       <div className="error-container">
         <h2>User not found</h2>
@@ -240,8 +233,8 @@ const Profile = () => {
             </div>
           ) : (
             <img 
-              src={avatarImage || user.avatar || 'https://via.placeholder.com/150'} 
-              alt={user.name} 
+              src={avatarImage || profile.avatar || 'https://via.placeholder.com/150'} 
+              alt={profile.name} 
               className="profile-avatar" 
             />
           )}
@@ -307,26 +300,26 @@ const Profile = () => {
             </div>
           ) : (
             <>
-              <h1>{user.name}</h1>
-              <p className="religion-tag">{user.religion}</p>
-              <p className="profile-bio">{user.bio || "No bio yet."}</p>
+              <h1>{profile.name}</h1>
+              <p className="religion-tag">{profile.religion}</p>
+              <p className="profile-bio">{profile.bio || "No bio yet."}</p>
               <div className="profile-stats">
                 <div className="stat">
                   <span className="stat-number">{posts.length}</span>
                   <span className="stat-label">Posts</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-number">{user.followersCount || 0}</span>
+                  <span className="stat-number">{profile.followersCount || 0}</span>
                   <span className="stat-label">Followers</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-number">{user.followingCount || 0}</span>
+                  <span className="stat-number">{profile.followingCount || 0}</span>
                   <span className="stat-label">Following</span>
                 </div>
               </div>
             </>
           )}
-
+          
           <div className="profile-actions">
             {!isOwnProfile && (
               <button
@@ -346,7 +339,7 @@ const Profile = () => {
                 </button>
               </>
             )}
-          </div>
+          }
         </div>
       </div>
 

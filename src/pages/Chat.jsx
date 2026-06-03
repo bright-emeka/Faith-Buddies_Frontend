@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendMessage, getChatHistory } from '../services/api';
-import { auth } from '../services/firebase';
+import { useAuth } from '../context/AuthContext';
 
 const Chat = ({ onBack, selectedChatId }) => { 
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -11,7 +12,6 @@ const Chat = ({ onBack, selectedChatId }) => {
   useEffect(() => {
     const initChat = async () => {
       try {
-        const user = auth.currentUser;
         if (!user) return;
 
         if (selectedChatId && selectedChatId !== 'ai-buddy') {
@@ -32,7 +32,7 @@ const Chat = ({ onBack, selectedChatId }) => {
     };
 
     initChat();
-  }, [selectedChatId]);
+  }, [selectedChatId, user]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -43,7 +43,6 @@ const Chat = ({ onBack, selectedChatId }) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
-    const user = auth.currentUser;
     if (!user) return;
 
     const userMessage = { 
@@ -103,7 +102,7 @@ const Chat = ({ onBack, selectedChatId }) => {
       {/* Messages Section */}
       <div className="chat-messages">
         {messages.map((msg, index) => (
-          <div key={index} className={`message-bubble ${msg.role === 'user' ? 'user' : 'ai'}`}>
+          <div key={index} className={`message-bubble ${msg.role === 'user' ? 'user' : 'ai`}}>
              <div className="text-content">{msg.content}</div>
           </div>
         ))}

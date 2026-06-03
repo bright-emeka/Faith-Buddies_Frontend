@@ -1,18 +1,17 @@
 // Post component - displays individual post with interactions
 import React, { useState, useEffect } from 'react';
 import { toggleLike, checkLiked, toggleFollow, checkFollowing } from '../services/api';
-import { auth } from '../services/firebase';
+import { useAuth } from '../context/AuthContext';
 
 const Post = ({ post, onDelete, onUserClick }) => {
+  const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [showComments, setShowComments] = useState(false);
 
-  const currentUser = auth.currentUser;
-
   useEffect(() => {
     const checkStatus = async () => {
-      if (currentUser && currentUser.uid !== post.userId) {
+      if (user && user.uid !== post.userId) {
         try {
           const likeStatus = await checkLiked(post.id);
           setLiked(likeStatus.liked);
@@ -26,7 +25,7 @@ const Post = ({ post, onDelete, onUserClick }) => {
     };
 
     checkStatus();
-  }, [post.id, post.userId, currentUser]);
+  }, [post.id, post.userId, user]);
 
   const handleLike = async () => {
     try {
@@ -56,7 +55,7 @@ const Post = ({ post, onDelete, onUserClick }) => {
             <p className="post-date">{new Date(post.createdAt).toLocaleDateString()}</p>
           </div>
         </div>
-        {currentUser && currentUser.uid !== post.userId && (
+        {user && user.uid !== post.userId && (
           <button className={`follow-btn ${following ? 'following' : ''}`} onClick={handleFollow}>
             {following ? 'Following' : 'Follow'}
           </button>
@@ -80,7 +79,7 @@ const Post = ({ post, onDelete, onUserClick }) => {
           💬 Comment
         </button>
         <button className="action-btn">↗️ Share</button>
-        {currentUser && currentUser.uid === post.userId && (
+        {user && user.uid === post.userId && (
           <button className="action-btn delete-btn" onClick={() => onDelete(post.id)}>
             🗑️ Delete
           </button>

@@ -1,8 +1,9 @@
 // Login/Register page component
 import React, { useState } from 'react';
-import { signUp, signIn } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
 
-const Login = ({ onLoginSuccess }) => {
+const Login = () => {
+  const { login, signUp } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,9 +26,8 @@ const Login = ({ onLoginSuccess }) => {
         }
         await signUp(email, password, name, religion);
       } else {
-        await signIn(email, password);
+        await login(email, password);
       }
-      onLoginSuccess();
     } catch (err) {
       console.error('Auth error:', err);
       setError(err.message || 'Authentication failed');

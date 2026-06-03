@@ -1,11 +1,11 @@
 // UserCard component - displays user profile card with follow button
 import React, { useState, useEffect } from 'react';
 import { toggleFollow, checkFollowing } from '../services/api';
-import { auth } from '../services/firebase';
+import { useAuth } from '../context/AuthContext';
 
 const UserCard = ({ user, onUserClick }) => {
+  const { user: currentUser } = useAuth();
   const [following, setFollowing] = useState(false);
-  const currentUser = auth.currentUser;
 
   useEffect(() => {
     const checkStatus = async () => {

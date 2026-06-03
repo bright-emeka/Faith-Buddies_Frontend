@@ -1,55 +1,5 @@
 // API service for backend communication
-import axios from 'axios';
-import { getAuth } from 'firebase/auth';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
-});
-
-// 🔒 GLOBAL REQUEST INTERCEPTOR: Automatically attaches Firebase Token dynamically
-api.interceptors.request.use(
-  async (config) => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      
-      if (user) {
-        const token = await user.getIdToken();
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-    } catch (authError) {
-      console.warn('Could not attach Firebase Auth token to request:', authError);
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Sync user to MongoDB backend after Firebase Auth signup
-export const syncUserWithBackend = async (token, userData) => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/api/users/sync`,
-      userData,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 15000,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Error syncing user to backend:', error.message || error);
-    throw new Error(error.response?.data?.error || 'Failed to sync user to backend');
-  }
-};
+import apiClient from './apiClient';
 
 // Retry logic for failed requests
 const retryWithBackoff = async (fn, maxRetries = 3) => {
@@ -72,7 +22,7 @@ const retryWithBackoff = async (fn, maxRetries = 3) => {
 export const sendMessage = async (message, userId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.post('/api/chat/message', {
+      apiClient.post('/api/chat/message', {
         message,
         userId,
       })
@@ -88,7 +38,7 @@ export const sendMessage = async (message, userId) => {
 export const getChatHistory = async (userId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/chat/history/${userId}`)
+      apiClient.get(`/api/chat/history/${userId}`)
     );
     return response.data;
   } catch (error) {
@@ -103,7 +53,7 @@ export const getChatHistory = async (userId) => {
 export const getCurrentUserProfile = async () => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get('/api/users/profile')
+      apiClient.get('/api/users/profile')
     );
     return response.data;
   } catch (error) {
@@ -116,7 +66,7 @@ export const getCurrentUserProfile = async () => {
 export const createUserProfile = async (userId, data) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.post('/api/users/profile', {
+      apiClient.post('/api/users/profile', {
         ...data,
       })
     );
@@ -131,7 +81,7 @@ export const createUserProfile = async (userId, data) => {
 export const getUserProfile = async (userId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/users/${userId}`)
+      apiClient.get(`/api/users/${userId}`)
     );
     return response.data;
   } catch (error) {
@@ -144,7 +94,7 @@ export const getUserProfile = async (userId) => {
 export const updateUserProfile = async (userId, data) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.put(`/api/users/${userId}`, data)
+      apiClient.put(`/api/users/${userId}`, data)
     );
     return response.data;
   } catch (error) {
@@ -157,7 +107,7 @@ export const updateUserProfile = async (userId, data) => {
 export const searchUsers = async (query) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/users/search/${query}`)
+      apiClient.get(`/api/users/search/${query}`)
     );
     return response.data;
   } catch (error) {
@@ -172,7 +122,7 @@ export const searchUsers = async (query) => {
 export const createPost = async (content, image) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.post('/api/posts', {
+      apiClient.post('/api/posts', {
         content,
         image,
       })
@@ -188,7 +138,7 @@ export const createPost = async (content, image) => {
 export const getFeed = async (lastTimestamp) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get('/api/posts/feed', {
+      apiClient.get('/api/posts/feed', {
         params: { lastTimestamp },
       })
     );
@@ -203,7 +153,7 @@ export const getFeed = async (lastTimestamp) => {
 export const getUserPosts = async (userId, lastTimestamp) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/posts/user/${userId}`, {
+      apiClient.get(`/api/posts/user/${userId}`, {
         params: { lastTimestamp },
       })
     );
@@ -218,7 +168,7 @@ export const getUserPosts = async (userId, lastTimestamp) => {
 export const getPost = async (postId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/posts/${postId}`)
+      apiClient.get(`/api/posts/${postId}`)
     );
     return response.data;
   } catch (error) {
@@ -231,7 +181,7 @@ export const getPost = async (postId) => {
 export const deletePost = async (postId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.delete(`/api/posts/${postId}`)
+      apiClient.delete(`/api/posts/${postId}`)
     );
     return response.data;
   } catch (error) {
@@ -246,7 +196,7 @@ export const deletePost = async (postId) => {
 export const toggleLike = async (postId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.post(`/api/interactions/${postId}/like`)
+      apiClient.post(`/api/interactions/${postId}/like`)
     );
     return response.data;
   } catch (error) {
@@ -259,7 +209,7 @@ export const toggleLike = async (postId) => {
 export const checkLiked = async (postId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/interactions/${postId}/liked`)
+      apiClient.get(`/api/interactions/${postId}/liked`)
     );
     return response.data;
   } catch (error) {
@@ -272,7 +222,7 @@ export const checkLiked = async (postId) => {
 export const addComment = async (postId, content) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.post(`/api/interactions/${postId}/comments`, {
+      apiClient.post(`/api/interactions/${postId}/comments`, {
         content,
       })
     );
@@ -287,7 +237,7 @@ export const addComment = async (postId, content) => {
 export const getComments = async (postId, lastTimestamp) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/interactions/${postId}/comments`, {
+      apiClient.get(`/api/interactions/${postId}/comments`, {
         params: { lastTimestamp },
       })
     );
@@ -302,7 +252,7 @@ export const getComments = async (postId, lastTimestamp) => {
 export const deleteComment = async (postId, commentId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.delete(`/api/interactions/${postId}/comments/${commentId}`)
+      apiClient.delete(`/api/interactions/${postId}/comments/${commentId}`)
     );
     return response.data;
   } catch (error) {
@@ -317,7 +267,7 @@ export const deleteComment = async (postId, commentId) => {
 export const toggleFollow = async (targetUserId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.post(`/api/follows/${targetUserId}/follow`)
+      apiClient.post(`/api/follows/${targetUserId}/follow`)
     );
     return response.data;
   } catch (error) {
@@ -330,7 +280,7 @@ export const toggleFollow = async (targetUserId) => {
 export const checkFollowing = async (targetUserId) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/follows/status/${targetUserId}/following`)
+      apiClient.get(`/api/follows/status/${targetUserId}/following`)
     );
     return response.data;
   } catch (error) {
@@ -343,7 +293,7 @@ export const checkFollowing = async (targetUserId) => {
 export const getFollowers = async (userId, limit = 50) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/follows/${userId}/followers`, {
+      apiClient.get(`/api/follows/${userId}/followers`, {
         params: { limit },
       })
     );
@@ -358,7 +308,7 @@ export const getFollowers = async (userId, limit = 50) => {
 export const getFollowing = async (userId, limit = 50) => {
   try {
     const response = await retryWithBackoff(() =>
-      api.get(`/api/follows/${userId}/following`, {
+      apiClient.get(`/api/follows/${userId}/following`, {
         params: { limit },
       })
     );
@@ -369,4 +319,4 @@ export const getFollowing = async (userId, limit = 50) => {
   }
 };
 
-export default api;
+export default apiClient;
