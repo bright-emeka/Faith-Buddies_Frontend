@@ -317,8 +317,9 @@ const Profile = () => {
                   <span className="stat-label">Following</span>
                 </div>
               </div>
-            </>
-          )}
+                </>
+              )}
+        </div>
           
           <div className="profile-actions">
             {!isOwnProfile && (
@@ -335,11 +336,10 @@ const Profile = () => {
                   Edit Profile
                 </button>
                 <button className="theme-toggle-btn" onClick={toggleTheme} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-                  {isDarkMode ? '☀️ Light' : '🌙 Dark'}
-                </button>
-              </>
-            )}
-          }
+                 {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+                 </button>
+               </>
+             )}
         </div>
       </div>
 
