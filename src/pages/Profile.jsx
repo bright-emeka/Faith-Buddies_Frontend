@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  getUserProfile, 
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  getUserProfile,
   getCurrentUserProfile,
   createUserProfile,
-  getUserPosts, 
-  getFollowers, 
-  getFollowing, 
-  toggleFollow, 
-  checkFollowing, 
+  getUserPosts,
+  getFollowers,
+  getFollowing,
+  toggleFollow,
+  checkFollowing,
   updateUserProfile,
   createPost,
-} from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import Post from '../components/Post';
-import { useTheme } from '../context/ThemeContext';
+} from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import Post from "../components/Post";
+import { useTheme } from "../context/ThemeContext";
 
 const Profile = () => {
   const { userId } = useParams();
@@ -27,28 +27,35 @@ const Profile = () => {
   const [following, setFollowing] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('posts');
+  const [activeTab, setActiveTab] = useState("posts");
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', bio: '', avatar: '', religion: '' });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    bio: "",
+    avatar: "",
+    religion: "",
+  });
   const [createPostModal, setCreatePostModal] = useState(false);
-  const [postContent, setPostContent] = useState('');
-  const [postImage, setPostImage] = useState('');
+  const [postContent, setPostContent] = useState("");
+  const [postImage, setPostImage] = useState("");
   const [isPosting, setIsPosting] = useState(false);
-  const [avatarImage, setAvatarImage] = useState('');
+  const [avatarImage, setAvatarImage] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const isOwnProfile = user && user.uid === userId;
 
   const loadProfile = useCallback(async () => {
-    if (!userId || userId === 'undefined') {
-      console.error("Profile Error: userId is undefined. Check your Link tags or Routes.");
+    if (!userId || userId === "undefined") {
+      console.error(
+        "Profile Error: userId is undefined. Check your Link tags or Routes.",
+      );
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      
+
       // 1. For own profile, use /api/users/profile (authenticated endpoint)
       // For other profiles, use /api/users/{userId}
       let profileData;
@@ -66,7 +73,7 @@ const Profile = () => {
       const [userPosts, followersList, followingList] = await Promise.all([
         getUserPosts(userId).catch(() => []),
         getFollowers(userId).catch(() => []),
-        getFollowing(userId).catch(() => [])
+        getFollowing(userId).catch(() => []),
       ]);
 
       setPosts(userPosts || []);
@@ -78,25 +85,31 @@ const Profile = () => {
         const result = await checkFollowing(userId).catch(() => null);
         setIsFollowing(result?.following || false);
       }
-      
     } catch (error) {
-      console.warn('Profile not found or loaded with errors. Checking fallback initialization...', error.message);
-      
+      console.warn(
+        "Profile not found or loaded with errors. Checking fallback initialization...",
+        error.message,
+      );
+
       // FALLBACK: If profile lookup fails (404), check if it's the current user's profile
       if (isOwnProfile) {
         console.log("Initializing brand new MongoDB profile document...");
         try {
           const fallbackProfile = await createUserProfile(user.uid, {
-            name: user.displayName || user.email?.split('@')[0] || 'New Believer',
+            name:
+              user.displayName || user.email?.split("@")[0] || "New Believer",
             email: user.email,
-            avatar: user.avatar || '',
-            bio: 'Faithful believer sharing wisdom and inspiration',
-            religion: 'Christian'
+            avatar: user.avatar || "",
+            bio: "Faithful believer sharing wisdom and inspiration",
+            religion: "Christian",
           });
-          
+
           setProfile(fallbackProfile);
         } catch (creationError) {
-          console.error('Fatal: Failed to auto-initialize profile document:', creationError);
+          console.error(
+            "Fatal: Failed to auto-initialize profile document:",
+            creationError,
+          );
           setProfile(null);
         }
       } else {
@@ -115,32 +128,34 @@ const Profile = () => {
     try {
       const result = await toggleFollow(userId);
       setIsFollowing(result.following);
-      
-      setProfile(prev => ({
+
+      setProfile((prev) => ({
         ...prev,
-        followersCount: result.following ? (prev.followersCount || 0) + 1 : (prev.followersCount || 1) - 1,
+        followersCount: result.following
+          ? (prev.followersCount || 0) + 1
+          : (prev.followersCount || 1) - 1,
       }));
     } catch (error) {
-      console.error('Error toggling follow:', error);
+      console.error("Error toggling follow:", error);
     }
   };
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error("Error logging out:", error);
     }
   };
 
   const handleEdit = () => {
     if (profile) {
       setEditForm({
-        name: profile.name || '',
-        bio: profile.bio || '',
-        avatar: profile.avatar || '',
-        religion: profile.religion || 'Christian',
+        name: profile.name || "",
+        bio: profile.bio || "",
+        avatar: profile.avatar || "",
+        religion: profile.religion || "Christian",
       });
       setIsEditing(true);
     }
@@ -149,16 +164,16 @@ const Profile = () => {
   const handleSaveEdit = async () => {
     try {
       await updateUserProfile(userId, editForm);
-      setProfile(prev => ({ ...prev, ...editForm }));
+      setProfile((prev) => ({ ...prev, ...editForm }));
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
     }
   };
 
   const handleCreatePost = async () => {
     if (!postContent.trim()) {
-      alert('Please enter some content for your post');
+      alert("Please enter some content for your post");
       return;
     }
 
@@ -166,12 +181,12 @@ const Profile = () => {
     try {
       const newPost = await createPost(postContent, postImage || null);
       setPosts([newPost, ...posts]);
-      setPostContent('');
-      setPostImage('');
+      setPostContent("");
+      setPostImage("");
       setCreatePostModal(false);
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert('Failed to create post. Please try again.');
+      console.error("Error creating post:", error);
+      alert("Failed to create post. Please try again.");
     } finally {
       setIsPosting(false);
     }
@@ -189,14 +204,14 @@ const Profile = () => {
       try {
         const avatarUrl = URL.createObjectURL(e.target.files[0]);
         setAvatarImage(avatarUrl);
-        
+
         await updateUserProfile(userId, { avatar: avatarUrl });
-        setProfile(prev => ({ ...prev, avatar: avatarUrl }));
-        
-        e.target.value = '';
+        setProfile((prev) => ({ ...prev, avatar: avatarUrl }));
+
+        e.target.value = "";
       } catch (error) {
-        console.error('Error updating avatar:', error);
-        alert('Failed to update avatar. Please try again.');
+        console.error("Error updating avatar:", error);
+        alert("Failed to update avatar. Please try again.");
       } finally {
         setIsUploadingAvatar(false);
       }
@@ -216,8 +231,10 @@ const Profile = () => {
     return (
       <div className="error-container">
         <h2>User not found</h2>
-        <p>We couldn't find a user with the ID: <strong>{userId}</strong></p>
-        <button onClick={() => navigate('/')}>Go Home</button>
+        <p>
+          We couldn't find a user with the ID: <strong>{userId}</strong>
+        </p>
+        <button onClick={() => navigate("/")}>Go Home</button>
       </div>
     );
   }
@@ -232,19 +249,26 @@ const Profile = () => {
               <p>Uploading...</p>
             </div>
           ) : (
-            <img 
-              src={avatarImage || profile.avatar || 'https://via.placeholder.com/150'} 
-              alt={profile.name} 
-              className="profile-avatar" 
+            <img
+              src={
+                avatarImage ||
+                profile.avatar ||
+                "https://via.placeholder.com/150"
+              }
+              alt={profile.name}
+              className="profile-avatar"
             />
           )}
           {isOwnProfile && (
-            <label className="avatar-upload-label" onClick={() => document.getElementById('avatar-input').click()}>
+            <label
+              className="avatar-upload-label"
+              onClick={() => document.getElementById("avatar-input").click()}
+            >
               <input
                 type="file"
                 id="avatar-input"
                 accept="image/*"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 onChange={handleAvatarChange}
               />
               <div className="avatar-upload-icon">+</div>
@@ -260,14 +284,18 @@ const Profile = () => {
                 <input
                   type="text"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
                 />
               </div>
               <div className="form-group">
                 <label>Bio</label>
                 <textarea
                   value={editForm.bio}
-                  onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, bio: e.target.value })
+                  }
                 />
               </div>
               <div className="form-group">
@@ -275,14 +303,18 @@ const Profile = () => {
                 <input
                   type="text"
                   value={editForm.avatar}
-                  onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, avatar: e.target.value })
+                  }
                 />
               </div>
               <div className="form-group">
                 <label>Religion</label>
                 <select
                   value={editForm.religion}
-                  onChange={(e) => setEditForm({ ...editForm, religion: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, religion: e.target.value })
+                  }
                 >
                   <option value="Christian">Christian</option>
                   <option value="Muslim">Muslim</option>
@@ -294,8 +326,15 @@ const Profile = () => {
                 </select>
               </div>
               <div className="edit-actions">
-                <button className="save-btn" onClick={handleSaveEdit}>Save Changes</button>
-                <button className="cancel-btn" onClick={() => setIsEditing(false)}>Cancel</button>
+                <button className="save-btn" onClick={handleSaveEdit}>
+                  Save Changes
+                </button>
+                <button
+                  className="cancel-btn"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           ) : (
@@ -309,24 +348,28 @@ const Profile = () => {
                   <span className="stat-label">Posts</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-number">{profile.followersCount || 0}</span>
+                  <span className="stat-number">
+                    {profile.followersCount || 0}
+                  </span>
                   <span className="stat-label">Followers</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-number">{profile.followingCount || 0}</span>
+                  <span className="stat-number">
+                    {profile.followingCount || 0}
+                  </span>
                   <span className="stat-label">Following</span>
                 </div>
               </div>
             </>
           )}
-          
+
           <div className="profile-actions">
             {!isOwnProfile && (
               <button
-                className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                className={`follow-btn ${isFollowing ? "following" : ""}`}
                 onClick={handleFollow}
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? "Following" : "Follow"}
               </button>
             )}
             {isOwnProfile && !isEditing && (
@@ -334,51 +377,77 @@ const Profile = () => {
                 <button className="edit-profile-btn" onClick={handleEdit}>
                   Edit Profile
                 </button>
-                <button className="theme-toggle-btn" onClick={toggleTheme} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-                  {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+                <button
+                  className="theme-toggle-btn"
+                  onClick={toggleTheme}
+                  title={
+                    isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
+                  }
+                >
+                  {isDarkMode ? "☀️ Light" : "🌙 Dark"}
                 </button>
               </>
             )}
           </div>
         </div>
+      </div>
 
-        <div className="profile-tabs">
-        <button className={`tab ${activeTab === 'posts' ? 'active' : ''}`} onClick={() => setActiveTab('posts')}>
+      <div className="profile-tabs">
+        <button
+          className={`tab ${activeTab === "posts" ? "active" : ""}`}
+          onClick={() => setActiveTab("posts")}
+        >
           Posts
         </button>
-        <button className={`tab ${activeTab === 'followers' ? 'active' : ''}`} onClick={() => setActiveTab('followers')}>
+        <button
+          className={`tab ${activeTab === "followers" ? "active" : ""}`}
+          onClick={() => setActiveTab("followers")}
+        >
           Followers
         </button>
-        <button className={`tab ${activeTab === 'following' ? 'active' : ''}`} onClick={() => setActiveTab('following')}>
+        <button
+          className={`tab ${activeTab === "following" ? "active" : ""}`}
+          onClick={() => setActiveTab("following")}
+        >
           Following
         </button>
       </div>
 
       <div className="profile-content">
-        {activeTab === 'posts' && (
+        {activeTab === "posts" && (
           <div className="posts-list">
             {posts.length === 0 ? (
               <div className="empty-posts-state">
                 <p>No posts yet</p>
                 {isOwnProfile && (
-                  <button 
-                    className="add-post-btn" 
+                  <button
+                    className="add-post-btn"
                     onClick={() => setCreatePostModal(true)}
                   >
                     +
                   </button>
                 )}
               </div>
-            ) : posts.map((post) => <Post key={post.id || post._id} post={post} />)}
+            ) : (
+              posts.map((post) => (
+                <Post key={post.id || post._id} post={post} />
+              ))
+            )}
           </div>
         )}
-        
+
         {createPostModal && (
-          <div className="modal-backdrop" onClick={() => setCreatePostModal(false)}>
+          <div
+            className="modal-backdrop"
+            onClick={() => setCreatePostModal(false)}
+          >
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3>Create New Post</h3>
-                <button className="modal-close-btn" onClick={() => setCreatePostModal(false)}>
+                <button
+                  className="modal-close-btn"
+                  onClick={() => setCreatePostModal(false)}
+                >
                   &times;
                 </button>
               </div>
@@ -399,58 +468,84 @@ const Profile = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button 
-                  className="modal-cancel-btn" 
+                <button
+                  className="modal-cancel-btn"
                   onClick={() => {
-                    setPostContent('');
-                    setPostImage('');
+                    setPostContent("");
+                    setPostImage("");
                     setCreatePostModal(false);
                   }}
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   className="modal-post-btn"
                   onClick={handleCreatePost}
                   disabled={isPosting || !postContent.trim()}
                 >
-                  {isPosting ? 'Posting...' : 'Post'}
+                  {isPosting ? "Posting..." : "Post"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {activeTab === 'followers' && (
+        {activeTab === "followers" && (
           <div className="users-grid">
-            {followers.length === 0 ? <p>No followers yet</p> : followers.map((f) => (
-              <div key={f.uid || f._id} className="user-list-item" onClick={() => navigate(`/profile/${f.uid || f._id}`)} style={{ cursor: 'pointer' }}>
-                <img src={f.avatar || 'https://via.placeholder.com/50'} alt="" />
-                <h4>{f.name}</h4>
-              </div>
-            ))}
+            {followers.length === 0 ? (
+              <p>No followers yet</p>
+            ) : (
+              followers.map((f) => (
+                <div
+                  key={f.uid || f._id}
+                  className="user-list-item"
+                  onClick={() => navigate(`/profile/${f.uid || f._id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <img
+                    src={f.avatar || "https://via.placeholder.com/50"}
+                    alt=""
+                  />
+                  <h4>{f.name}</h4>
+                </div>
+              ))
+            )}
           </div>
         )}
 
-        {activeTab === 'following' && (
+        {activeTab === "following" && (
           <div className="users-grid">
-            {following.length === 0 ? <p>Not following anyone yet</p> : following.map((f) => (
-              <div key={f.uid || f._id} className="user-list-item" onClick={() => navigate(`/profile/${f.uid || f._id}`)} style={{ cursor: 'pointer' }}>
-                <img src={f.avatar || 'https://via.placeholder.com/50'} alt="" />
-                <h4>{f.name}</h4>
-              </div>
-            ))}
+            {following.length === 0 ? (
+              <p>Not following anyone yet</p>
+            ) : (
+              following.map((f) => (
+                <div
+                  key={f.uid || f._id}
+                  className="user-list-item"
+                  onClick={() => navigate(`/profile/${f.uid || f._id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <img
+                    src={f.avatar || "https://via.placeholder.com/50"}
+                    alt=""
+                  />
+                  <h4>{f.name}</h4>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
 
       {isOwnProfile && (
         <div className="profile-footer">
-          <button className="logout-btn" onClick={handleLogout}>Logout</button>
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       )}
     </div>
   );
-}
+};
 
 export default Profile;
