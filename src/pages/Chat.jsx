@@ -102,7 +102,7 @@ const Chat = ({ onBack, selectedChatId }) => {
       {/* Messages Section */}
       <div className="chat-messages">
         {messages.map((msg, index) => (
-          <div key={index} className={`message-bubble ${msg.role === 'user' ? 'user' : 'ai`}}>
+         <div key={index} className={`message-bubble ${msg.role === 'user' ? 'user' : 'ai'}`}>
              <div className="text-content">{msg.content}</div>
           </div>
         ))}

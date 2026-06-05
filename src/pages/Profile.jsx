@@ -330,17 +330,17 @@ const Profile = () => {
                 {isFollowing ? 'Following' : 'Follow'}
               </button>
             )}
-            {isOwnProfile && !isEditing && (
-              <>
-                <button className="edit-profile-btn" onClick={handleEdit}>
-                  Edit Profile
-                </button>
-                <button className="theme-toggle-btn" onClick={toggleTheme} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-                 {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+{isOwnProfile && !isEditing && (
+               <>
+                 <button className="edit-profile-btn" onClick={handleEdit}>
+                   Edit Profile
+                 </button>
+                 <button className="theme-toggle-btn" onClick={toggleTheme} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                   {isDarkMode ? '☀️ Light' : '🌙 Dark'}
                  </button>
                </>
              )}
-        </div>
+           </div>
       </div>
 
       <div className="profile-tabs">
