@@ -21,7 +21,6 @@ const Login = () => {
       if (isSignUp) {
         if (!name) {
           setError('Name is required');
-          setLoading(false);
           return;
         }
         await signUp(email, password, name, religion);

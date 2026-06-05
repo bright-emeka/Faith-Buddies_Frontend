@@ -33,67 +33,59 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+    const response = await fetch(`${API_BASE_URL}/api/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const data = await response.json();
-      const { accessToken, refreshToken, user } = data;
-
-      // Store tokens and user
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      setAccessToken(accessToken);
-      setRefreshToken(refreshToken);
-      setUser(user);
-
-      return { accessToken, refreshToken, user };
-    } catch (error) {
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.error || 'Login failed');
     }
+
+    const data = await response.json();
+    const { accessToken, refreshToken, user } = data;
+
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+    setUser(user);
+
+    return { accessToken, refreshToken, user };
   };
 
   const signUp = async (email, password, name, religion) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, name, religion }),
-      });
+    const response = await fetch(`${API_BASE_URL}/api/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password, name, religion }),
+    });
 
-      if (!response.ok) {
-        throw new Error('Sign up failed');
-      }
-
-      const data = await response.json();
-      const { accessToken, refreshToken, user } = data;
-
-      // Store tokens and user
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      setAccessToken(accessToken);
-      setRefreshToken(refreshToken);
-      setUser(user);
-
-      return { accessToken, refreshToken, user };
-    } catch (error) {
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.error || 'Sign up failed');
     }
+
+    const data = await response.json();
+    const { accessToken, refreshToken, user } = data;
+
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+    setUser(user);
+
+    return { accessToken, refreshToken, user };
   };
 
   const logout = () => {
@@ -129,7 +121,8 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Refresh failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Refresh failed');
       }
 
       const data = await response.json();
