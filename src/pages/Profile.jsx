@@ -317,9 +317,8 @@ const Profile = () => {
                   <span className="stat-label">Following</span>
                 </div>
               </div>
-                </>
-              )}
-        </div>
+            </>
+          )}
           
           <div className="profile-actions">
             {!isOwnProfile && (
@@ -330,20 +329,20 @@ const Profile = () => {
                 {isFollowing ? 'Following' : 'Follow'}
               </button>
             )}
-{isOwnProfile && !isEditing && (
-               <>
-                 <button className="edit-profile-btn" onClick={handleEdit}>
-                   Edit Profile
-                 </button>
-                 <button className="theme-toggle-btn" onClick={toggleTheme} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-                   {isDarkMode ? '☀️ Light' : '🌙 Dark'}
-                 </button>
-               </>
-             )}
-           </div>
-      </div>
+            {isOwnProfile && !isEditing && (
+              <>
+                <button className="edit-profile-btn" onClick={handleEdit}>
+                  Edit Profile
+                </button>
+                <button className="theme-toggle-btn" onClick={toggleTheme} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                  {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
 
-      <div className="profile-tabs">
+        <div className="profile-tabs">
         <button className={`tab ${activeTab === 'posts' ? 'active' : ''}`} onClick={() => setActiveTab('posts')}>
           Posts
         </button>
@@ -452,6 +451,6 @@ const Profile = () => {
       )}
     </div>
   );
-};
+}
 
 export default Profile;
