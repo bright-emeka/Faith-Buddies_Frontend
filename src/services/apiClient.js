@@ -1,10 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
+  withCredentials: true, // allow HttpOnly cookies (refresh token) to be sent
 });
 
 // Request interceptor: attach access token from localStorage
@@ -16,61 +18,48 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle 401 and token refresh
+// Response interceptor: handle 401 and token refresh (cookie-based)
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
-    // If the error is 401 and we haven't tried to refresh yet
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token');
-        }
-        
-        const response = await axios.post(
-          `${API_BASE_URL}/api/refresh`,
-          { refreshToken },
-          { timeout: 15000 }
+        // Backend reads refresh token from HttpOnly cookies
+        const refreshResponse = await axios.post(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {},
+          {
+            timeout: 15000,
+            withCredentials: true,
+          }
         );
-        
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-        
-        // Update tokens in localStorage
+
+        const { accessToken } = refreshResponse.data;
+
         localStorage.setItem('accessToken', accessToken);
-        if (newRefreshToken) {
-          localStorage.setItem('refreshToken', newRefreshToken);
-        }
-        
-        // Update the Authorization header for the original request
+
         originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
-        
-        // Retry the original request
+
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, logout the user
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        
-        // We'll throw an error that can be caught by the component
+
         return Promise.reject(refreshError);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
 
 export default apiClient;
+
