@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await fetch(`${API_BASE_URL}/api/login`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
 
     // Optionally call backend to invalidate refresh token
-    fetch(`${API_BASE_URL}/api/logout`, {
+    fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   // We'll implement token refresh in the axios interceptor, but we can also have a manual refresh function
   const refreshAccessToken = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/refresh`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
