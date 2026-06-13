@@ -1,7 +1,7 @@
 // Post component - displays individual post with interactions
 import React, { useState, useEffect } from 'react';
 import { toggleLike, checkLiked, toggleFollow, checkFollowing } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 const Post = ({ post, onDelete, onUserClick }) => {
   const { user } = useAuth();

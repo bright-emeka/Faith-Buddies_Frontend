@@ -12,7 +12,7 @@ import {
   updateUserProfile,
   createPost,
 } from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import Post from "../components/Post";
 import { useTheme } from "../context/ThemeContext";
 

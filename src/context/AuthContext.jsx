@@ -1,41 +1,31 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState } from 'react';
 
-const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [accessToken, setAccessToken] = useState(null);
-
-  // Refresh token is stored server-side in HttpOnly cookies (not in localStorage)
-  const [refreshToken, setRefreshToken] = useState(null);
-
-  const [loading, setLoading] = useState(true);
-
+export function AuthProvider({ children }) {
   const API_BASE_URL =
-    import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com';
+    import.meta.env.VITE_API_URL ||
+    'https://faith-buddies-backend.onrender.com';
 
-  // Load access token + user from localStorage on startup
-  useEffect(() => {
-    const storedAccessToken = localStorage.getItem('accessToken');
+  const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
 
-    if (storedAccessToken && storedUser) {
-      setAccessToken(storedAccessToken);
-      setUser(JSON.parse(storedUser));
+    if (!storedUser) return null;
+
+    try {
+      return JSON.parse(storedUser);
+    } catch {
+      localStorage.removeItem('user');
+      return null;
     }
+  });
 
-    // Avoid setState cascades in strict-mode by deferring the final update
-    setTimeout(() => setLoading(false), 0);
-  }, []);
+  const [accessToken, setAccessToken] = useState(() => {
+    return localStorage.getItem('accessToken');
+  });
 
+  // Refresh token is stored as an HttpOnly cookie on the backend
+  const [refreshToken, setRefreshToken] = useState(null);
 
   const login = async (email, password) => {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -43,20 +33,26 @@ export const AuthProvider = ({ children }) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      credentials: 'include',
+      body: JSON.stringify({
+        email,
+        password,
+      }),
     });
 
     if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || 'Login failed');
+      const errorData = await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Login failed'
+      );
     }
 
     const data = await response.json();
     const { accessToken, user } = data;
 
-    // Backend sets refresh token as HttpOnly cookie; only accessToken is returned in JSON.
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('user', JSON.stringify(user));
 
@@ -73,14 +69,23 @@ export const AuthProvider = ({ children }) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password, name, religion }),
+      credentials: 'include',
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+        religion,
+      }),
     });
 
     if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || 'Sign up failed');
+      const errorData = await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Sign up failed'
+      );
     }
 
     const data = await response.json();
@@ -97,22 +102,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    // Clear tokens and user from localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
 
-    // Ask backend to clear HttpOnly cookies
     try {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: accessToken
+            ? `Bearer ${accessToken}`
+            : '',
         },
       });
     } catch {
-      // Ignore logout failures
+      // Ignore logout errors
     }
 
     setAccessToken(null);
@@ -120,7 +125,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Manual refresh (optional). Not required if axios interceptor handles it.
   const refreshAccessToken = async () => {
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
@@ -128,10 +132,13 @@ export const AuthProvider = ({ children }) => {
     });
 
     if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || 'Refresh failed');
+      const errorData = await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Refresh failed'
+      );
     }
 
     const data = await response.json();
@@ -146,18 +153,17 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     accessToken,
-    refreshToken, // remains null; refresh token is cookie-based
+    refreshToken,
+    loading: false,
     login,
     signUp,
     logout,
     refreshAccessToken,
-    loading,
   };
 
-  if (loading) {
-    return null;
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}

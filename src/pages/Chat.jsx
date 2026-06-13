@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendMessage, getChatHistory } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 const Chat = ({ onBack, selectedChatId }) => { 
   const { user } = useAuth();

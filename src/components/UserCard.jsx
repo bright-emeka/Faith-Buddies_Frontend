@@ -1,7 +1,7 @@
 // UserCard component - displays user profile card with follow button
 import React, { useState, useEffect } from 'react';
 import { toggleFollow, checkFollowing } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 const UserCard = ({ user, onUserClick }) => {
   const { user: currentUser } = useAuth();

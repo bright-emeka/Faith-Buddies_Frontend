@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { useAuth, AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 import { createUserProfile } from './services/api.jsx';
 import Login from './pages/Login.jsx';
 import Chat from './pages/Chat.jsx';
