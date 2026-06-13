@@ -104,12 +104,13 @@ export const updateUserProfile = async (userId, data) => {
   }
 };
 
-// Search users
+// Search users by name (exact endpoint requirement)
 export const searchUsers = async (query) => {
   try {
     const response = await retryWithBackoff(() =>
-      apiClient.get(`/api/users/search/${query}`)
+      apiClient.get('/api/users/search', { params: { query } })
     );
+
     return response.data;
   } catch (error) {
     console.error('Error searching users:', error.message || error);
