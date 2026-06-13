@@ -29,7 +29,7 @@ const Header = ({ userId, onUserClick }) => {
             onClick={() => navigate('/feed')}
           >
             <span className="icon">📰</span>
-            <span>Feed</span>
+            <span> </span>
           </button>
 
           <button
@@ -38,7 +38,7 @@ const Header = ({ userId, onUserClick }) => {
             onClick={() => navigate('/chat')}
           >
             <span className="icon">💬</span>
-            <span>Chat</span>
+            <span> </span>
           </button>
 
       <button
@@ -47,7 +47,7 @@ const Header = ({ userId, onUserClick }) => {
         onClick={() => navigate('/notifications')}
       >
         <span className="icon">🔔</span>
-        <span>Notifications</span>
+        <span> </span>
       </button>
 
       <button
@@ -56,7 +56,7 @@ const Header = ({ userId, onUserClick }) => {
         onClick={() => navigate('/search')}
       >
         <span className="icon">🔍</span>
-        <span>Search</span>
+        <span> </span>
       </button>
 
       <button
@@ -65,7 +65,7 @@ const Header = ({ userId, onUserClick }) => {
         onClick={() => navigate('/groups')}
       >
         <span className="icon">👥</span>
-        <span>Groups</span>
+        <span> </span>
       </button>
 
       <button
@@ -74,7 +74,7 @@ const Header = ({ userId, onUserClick }) => {
         onClick={() => onUserClick(userId)}
       >
         <span className="icon">👤</span>
-        <span>Profile</span>
+        <span> </span>
       </button>
         </div>
       </div>

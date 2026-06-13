@@ -47,7 +47,7 @@ const Feed = () => {
       <div className="feed-header">
         <h1>Feed</h1>
         <button onClick={loadFeed} className="refresh-btn">
-          🔄 Refresh
+          🔄
         </button>
       </div>
 
