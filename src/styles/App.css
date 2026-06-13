@@ -9,7 +9,6 @@
   display: flex;
   flex-direction: column;
   padding: 15px;
-  background-color: #ffffff;
   overflow-y: auto;
   height: calc(100vh - 180px); /* Adjust based on your header height */
 }
@@ -25,7 +24,7 @@
   position: relative;
 }
 
-/* AI Buddy Bubbles (Grey) */
+
 .message-bubble.ai {
   align-self: flex-start;
   background-color: #e4e6eb;
@@ -46,7 +45,6 @@
   display: flex;
   padding: 10px 15px;
   border-top: 1px solid #ddd;
-  background: white;
   align-items: center;
 }
 
@@ -66,14 +64,6 @@
   font-weight: bold;
   margin-left: 10px;
   cursor: pointer;
-}
-/* Container for the whole list */
-.chat-list-container {
-  display: flex;
-  flex-direction: column;
-  background-color: #ffffff;
-  height: 100%;
-  overflow-y: auto;
 }
 
 /* Individual Chat Row */

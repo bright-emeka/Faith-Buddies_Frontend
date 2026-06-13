@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { searchUsers } from '../services/api';
 
 const Search = ({ onUserClick }) => {
@@ -63,19 +64,32 @@ const Search = ({ onUserClick }) => {
         ) : (
           <div className="results-list">
             <h2>Users ({users.length})</h2>
-            {users.map(user => (
-              <div key={user.uid || user.id} className="user-result-item" onClick={() => onUserClick?.(user.uid || user.id)} style={{ cursor: 'pointer' }}>
-                <img src={user.avatar || 'https://via.placeholder.com/50'} alt={`${user.name}'s avatar`} className="result-avatar" />
-                <div className="result-info">
-                  <h3>{user.name}</h3>
-                  <p className="result-bio">{user.bio || 'No bio yet'}</p>
-                  <div className="result-stats">
-                    <span>{user.followersCount || 0} followers</span>
-                    <span>{user.followingCount || 0} following</span>
+            {users.map((user) => {
+              const uid = user.uid || user.id;
+              return (
+                <Link
+                  key={uid}
+                  to={`/profile/${uid}`}
+                  className="user-result-item"
+                  onClick={() => onUserClick?.(uid)}
+                  style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
+                >
+                  <img
+                    src={user.avatar || 'https://via.placeholder.com/50'}
+                    alt={`${user.name}'s avatar`}
+                    className="result-avatar"
+                  />
+                  <div className="result-info">
+                    <h3>{user.name}</h3>
+                    <p className="result-bio">{user.bio || 'No bio yet'}</p>
+                    <div className="result-stats">
+                      <span>{user.followersCount || 0} followers</span>
+                      <span>{user.followingCount || 0} following</span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

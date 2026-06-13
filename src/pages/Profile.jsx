@@ -7,7 +7,6 @@ import {
   getUserPosts,
   getFollowers,
   getFollowing,
-  toggleFollow,
   checkFollowing,
   updateUserProfile,
   createPost,
@@ -19,7 +18,8 @@ import { useTheme } from "../context/ThemeContext";
 const Profile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, accessToken: rawAccessToken } = useAuth();
+  const accessToken = rawAccessToken;
   const { isDarkMode, toggleTheme } = useTheme();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -126,17 +126,47 @@ const Profile = () => {
 
   const handleFollow = async () => {
     try {
-      const result = await toggleFollow(userId);
-      setIsFollowing(result.following);
+      if (!accessToken) {
+        console.error('No access token found for follow request');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com'}/api/follows/follow/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${rawAccessToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || errorData.error || 'Failed to follow'
+        );
+      }
+
+      const result = await response.json();
+
+      // Backends vary: prefer `following` boolean if present.
+      const nextFollowing =
+        typeof result?.following === 'boolean'
+          ? result.following
+          : !isFollowing;
+
+      setIsFollowing(nextFollowing);
 
       setProfile((prev) => ({
         ...prev,
-        followersCount: result.following
+        followersCount: nextFollowing
           ? (prev.followersCount || 0) + 1
-          : (prev.followersCount || 1) - 1,
+          : Math.max((prev.followersCount || 0) - 1, 0),
       }));
     } catch (error) {
-      console.error("Error toggling follow:", error);
+      console.error('Error following user:', error);
     }
   };
 
