@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  getUserProfile,
-  getCurrentUserProfile,
   createUserProfile,
   getUserPosts,
   getFollowers,
   getFollowing,
-  checkFollowing,
   updateUserProfile,
   createPost,
 } from "../services/api";
@@ -15,18 +13,23 @@ import { useAuth } from "../context/useAuth";
 import Post from "../components/Post";
 import { useTheme } from "../context/ThemeContext";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://faith-buddies-backend.onrender.com";
+
 const Profile = () => {
-  const { userId } = useParams();
+  const { uid } = useParams();
   const navigate = useNavigate();
   const { user, logout, accessToken: rawAccessToken } = useAuth();
   const accessToken = rawAccessToken;
   const { isDarkMode, toggleTheme } = useTheme();
+
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
+
   const [activeTab, setActiveTab] = useState("posts");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -35,138 +38,149 @@ const Profile = () => {
     avatar: "",
     religion: "",
   });
+
   const [createPostModal, setCreatePostModal] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [postImage, setPostImage] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+
   const [avatarImage, setAvatarImage] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  const isOwnProfile = user && user.uid === userId;
+  const isOwnProfile = user && user.uid === uid;
 
-  const loadProfile = useCallback(async () => {
-    if (!userId || userId === "undefined") {
-      console.error(
-        "Profile Error: userId is undefined. Check your Link tags or Routes.",
-      );
-      setLoading(false);
-      return;
-    }
+  const currentUserUid = user?.uid;
 
-    try {
-      setLoading(true);
+  const computeIsFollowingFromFollowers = (followersList) => {
+    if (!currentUserUid) return false;
+    if (!Array.isArray(followersList)) return false;
 
-      // 1. For own profile, use /api/users/profile (authenticated endpoint)
-      // For other profiles, use /api/users/{userId}
-      let profileData;
-      if (isOwnProfile) {
-        profileData = await getCurrentUserProfile().catch(() => null);
-        if (!profileData) {
-          profileData = await getUserProfile(userId);
-        }
-      } else {
-        profileData = await getUserProfile(userId);
-      }
-      setProfile(profileData);
+    // Backend followers shape can be [{ uid, ... }] or [{ _id, ... }]
+    return followersList.some((f) => (f?.uid || f?._id) === currentUserUid);
+  };
 
-      // 2. Run other fetches in parallel if the user profile exists
-      const [userPosts, followersList, followingList] = await Promise.all([
-        getUserPosts(userId).catch(() => []),
-        getFollowers(userId).catch(() => []),
-        getFollowing(userId).catch(() => []),
-      ]);
-
-      setPosts(userPosts || []);
-      setFollowers(followersList || []);
-      setFollowing(followingList || []);
-
-      // 3. Check follow status if it's someone else's profile
-      if (user && !isOwnProfile) {
-        const result = await checkFollowing(userId).catch(() => null);
-        setIsFollowing(result?.following || false);
-      }
-    } catch (error) {
-      console.warn(
-        "Profile not found or loaded with errors. Checking fallback initialization...",
-        error.message,
-      );
-
-      // FALLBACK: If profile lookup fails (404), check if it's the current user's profile
-      if (isOwnProfile) {
-        console.log("Initializing brand new MongoDB profile document...");
-        try {
-          const fallbackProfile = await createUserProfile(user.uid, {
-            name:
-              user.displayName || user.email?.split("@")[0] || "New Believer",
-            email: user.email,
-            avatar: user.avatar || "",
-            bio: "Faithful believer sharing wisdom and inspiration",
-            religion: "Christian",
-          });
-
-          setProfile(fallbackProfile);
-        } catch (creationError) {
-          console.error(
-            "Fatal: Failed to auto-initialize profile document:",
-            creationError,
-          );
-          setProfile(null);
-        }
-      } else {
-        setProfile(null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, user]);
+  const refreshFollowers = async (targetUid) => {
+    const followersList = await getFollowers(targetUid).catch(() => []);
+    setFollowers(followersList || []);
+    setIsFollowing(computeIsFollowingFromFollowers(followersList || []));
+  };
 
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    let cancelled = false;
 
-  const handleFollow = async () => {
-    try {
-      if (!accessToken) {
-        console.error('No access token found for follow request');
+    const load = async () => {
+      if (!uid || uid === "undefined") {
+        setLoading(false);
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com'}/api/follows/follow/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${rawAccessToken}`,
-          },
-        }
-      );
+      try {
+        setLoading(true);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        // 1) Fetch profile from required endpoint
+        const profileRes = await fetch(`${API_BASE_URL}/api/users/profile/${uid}`, {
+          method: "GET",
+          headers: accessToken
+            ? {
+                Authorization: `Bearer ${accessToken}`,
+              }
+            : {},
+        });
+
+        let profileData = null;
+        if (profileRes.ok) {
+          profileData = await profileRes.json();
+        } else {
+          // Fallback to allow creating brand new profile for own user
+          if (isOwnProfile && user) {
+            try {
+              profileData = await createUserProfile(user.uid, {
+                name:
+                  user.displayName || user.email?.split("@")[0] || "New Believer",
+                email: user.email,
+                avatar: user.avatar || "",
+                bio: "Faithful believer sharing wisdom and inspiration",
+                religion: "Christian",
+              });
+            } catch {
+              profileData = null;
+            }
+          }
+        }
+
+        if (cancelled) return;
+        setProfile(profileData);
+
+        // 2) Fetch posts + followers + following
+        const [userPosts, followersList, followingList] = await Promise.all([
+          getUserPosts(uid).catch(() => []),
+          getFollowers(uid).catch(() => []),
+          getFollowing(uid).catch(() => []),
+        ]);
+
+        if (cancelled) return;
+        setPosts(userPosts || []);
+        setFollowers(followersList || []);
+        setFollowing(followingList || []);
+
+        // 3) Follow state based on whether currentUser is in followers list
+        if (!isOwnProfile) {
+          const next = computeIsFollowingFromFollowers(followersList || []);
+          setIsFollowing(next);
+        } else {
+          setIsFollowing(false);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uid, accessToken, isOwnProfile, user]);
+
+  const handleFollow = async () => {
+    if (!uid || uid === "undefined") return;
+    if (isOwnProfile) return;
+
+    try {
+      if (!accessToken) {
+        console.error("No access token found for follow request");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/follows/follow/${uid}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(
-          errorData.message || errorData.error || 'Failed to follow'
+          errorData.message || errorData.error || "Failed to follow"
         );
       }
 
-      const result = await response.json();
+      // Re-check followers list and recompute button state
+      await refreshFollowers(uid);
 
-      // Backends vary: prefer `following` boolean if present.
-      const nextFollowing =
-        typeof result?.following === 'boolean'
-          ? result.following
-          : !isFollowing;
-
-      setIsFollowing(nextFollowing);
-
-      setProfile((prev) => ({
-        ...prev,
-        followersCount: nextFollowing
-          ? (prev.followersCount || 0) + 1
-          : Math.max((prev.followersCount || 0) - 1, 0),
-      }));
-    } catch (error) {
-      console.error('Error following user:', error);
+      // Optional: update visible counts if profile has them
+      setProfile((prev) => {
+        if (!prev) return prev;
+        const followersCount = (Array.isArray(followers) ? followers.length : 0) + 0; // recomputed from refetch
+        return {
+          ...prev,
+          followersCount,
+        };
+      });
+    } catch (err) {
+      console.error("Error following user:", err);
     }
   };
 
@@ -193,7 +207,7 @@ const Profile = () => {
 
   const handleSaveEdit = async () => {
     try {
-      await updateUserProfile(userId, editForm);
+      await updateUserProfile(uid, editForm);
       setProfile((prev) => ({ ...prev, ...editForm }));
       setIsEditing(false);
     } catch (error) {
@@ -235,7 +249,7 @@ const Profile = () => {
         const avatarUrl = URL.createObjectURL(e.target.files[0]);
         setAvatarImage(avatarUrl);
 
-        await updateUserProfile(userId, { avatar: avatarUrl });
+        await updateUserProfile(uid, { avatar: avatarUrl });
         setProfile((prev) => ({ ...prev, avatar: avatarUrl }));
 
         e.target.value = "";
@@ -248,6 +262,16 @@ const Profile = () => {
     }
   };
 
+  const errorUi = (
+    <div className="error-container">
+      <h2>User not found</h2>
+      <p>
+        We couldn't find a user with the ID: <strong>{uid}</strong>
+      </p>
+      <button onClick={() => navigate("/" )}>Go Home</button>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -258,15 +282,7 @@ const Profile = () => {
   }
 
   if (!profile) {
-    return (
-      <div className="error-container">
-        <h2>User not found</h2>
-        <p>
-          We couldn't find a user with the ID: <strong>{userId}</strong>
-        </p>
-        <button onClick={() => navigate("/")}>Go Home</button>
-      </div>
-    );
+    return errorUi;
   }
 
   return (
@@ -280,15 +296,12 @@ const Profile = () => {
             </div>
           ) : (
             <img
-              src={
-                avatarImage ||
-                profile.avatar ||
-                "https://via.placeholder.com/150"
-              }
+              src={avatarImage || profile.avatar || "https://via.placeholder.com/150"}
               alt={profile.name}
               className="profile-avatar"
             />
           )}
+
           {isOwnProfile && (
             <label
               className="avatar-upload-label"
@@ -305,6 +318,7 @@ const Profile = () => {
             </label>
           )}
         </div>
+
         <div className="profile-info">
           {isEditing ? (
             <div className="edit-form">
@@ -359,10 +373,7 @@ const Profile = () => {
                 <button className="save-btn" onClick={handleSaveEdit}>
                   Save Changes
                 </button>
-                <button
-                  className="cancel-btn"
-                  onClick={() => setIsEditing(false)}
-                >
+                <button className="cancel-btn" onClick={() => setIsEditing(false)}>
                   Cancel
                 </button>
               </div>
@@ -372,21 +383,18 @@ const Profile = () => {
               <h1>{profile.name}</h1>
               <p className="religion-tag">{profile.religion}</p>
               <p className="profile-bio">{profile.bio || "No bio yet."}</p>
+
               <div className="profile-stats">
                 <div className="stat">
                   <span className="stat-number">{posts.length}</span>
                   <span className="stat-label">Posts</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-number">
-                    {profile.followersCount || 0}
-                  </span>
+                  <span className="stat-number">{profile.followersCount || 0}</span>
                   <span className="stat-label">Followers</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-number">
-                    {profile.followingCount || 0}
-                  </span>
+                  <span className="stat-number">{profile.followingCount || 0}</span>
                   <span className="stat-label">Following</span>
                 </div>
               </div>
@@ -402,6 +410,7 @@ const Profile = () => {
                 {isFollowing ? "Following" : "Follow"}
               </button>
             )}
+
             {isOwnProfile && !isEditing && (
               <>
                 <button className="edit-profile-btn" onClick={handleEdit}>
@@ -471,7 +480,10 @@ const Profile = () => {
             className="modal-backdrop"
             onClick={() => setCreatePostModal(false)}
           >
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
                 <h3>Create New Post</h3>
                 <button
@@ -579,3 +591,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

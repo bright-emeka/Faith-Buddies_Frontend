@@ -1,0 +1,6 @@
+- [x] Update `src/pages/Profile.jsx` to use `uid` from `useParams()`
+- [ ] In `Profile.jsx`, fetch profile data from `/api/users/profile/:uid` inside `useEffect`
+- [ ] Add Follow/Unfollow button that POSTs to `/api/follows/follow/:uid`
+- [ ] Initialize `isFollowing` by checking whether `currentUser.uid` exists in target user `followers`
+- [ ] After follow/unfollow, refresh followers and recompute button state
+- [ ] Sanity-check build/lint (optional)
