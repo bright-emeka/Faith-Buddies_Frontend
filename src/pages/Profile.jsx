@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   createUserProfile,
+  getCurrentUserProfile,
+  getUserProfile,
   getUserPosts,
   getFollowers,
   getFollowing,
@@ -19,8 +21,7 @@ const API_BASE_URL =
 const Profile = () => {
   const { uid } = useParams();
   const navigate = useNavigate();
-  const { user, logout, accessToken: rawAccessToken } = useAuth();
-  const accessToken = rawAccessToken;
+  const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
 
   const [profile, setProfile] = useState(null);
@@ -77,34 +78,28 @@ const Profile = () => {
       try {
         setLoading(true);
 
-        // 1) Fetch profile from required endpoint
-        const profileRes = await fetch(`${API_BASE_URL}/api/users/profile/${uid}`, {
-          method: "GET",
-          headers: accessToken
-            ? {
-                Authorization: `Bearer ${accessToken}`,
-              }
-            : {},
-        });
-
         let profileData = null;
-        if (profileRes.ok) {
-          profileData = await profileRes.json();
-        } else {
-          // Fallback to allow creating brand new profile for own user
-          if (isOwnProfile && user) {
-            try {
-              profileData = await createUserProfile(user.uid, {
-                name:
-                  user.displayName || user.email?.split("@")[0] || "New Believer",
-                email: user.email,
-                avatar: user.avatar || "",
-                bio: "Faithful believer sharing wisdom and inspiration",
-                religion: "Christian",
-              });
-            } catch {
-              profileData = null;
-            }
+
+        try {
+          profileData = isOwnProfile
+            ? await getCurrentUserProfile()
+            : await getUserProfile(uid);
+        } catch {
+          profileData = null;
+        }
+
+        if (!profileData && isOwnProfile && user) {
+          try {
+            profileData = await createUserProfile(user.uid, {
+              name:
+                user.displayName || user.email?.split("@")[0] || "New Believer",
+              email: user.email,
+              avatar: user.avatar || "",
+              bio: "Faithful believer sharing wisdom and inspiration",
+              religion: "Christian",
+            });
+          } catch {
+            profileData = null;
           }
         }
 
@@ -140,14 +135,15 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [uid, accessToken, isOwnProfile, user]);
+  }, [uid, isOwnProfile, user, computeIsFollowingFromFollowers]);
 
   const handleFollow = async () => {
     if (!uid || uid === "undefined") return;
     if (isOwnProfile) return;
 
     try {
-      if (!accessToken) {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
         console.error("No access token found for follow request");
         return;
       }
@@ -156,7 +152,7 @@ const Profile = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 

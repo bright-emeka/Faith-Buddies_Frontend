@@ -1,5 +1,5 @@
 import React, { createContext, useState } from 'react';
-import { CapacitorHttp } from '@capacitor-community/http';
+import { CapacitorHttp } from '@capacitor/core';
 
 export const AuthContext = createContext(null);
 
@@ -25,15 +25,18 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('accessToken');
   });
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && {
+        Authorization: `Bearer ${token}`,
+      }),
+    };
+  };
+
   // Refresh token is stored as an HttpOnly cookie on the backend
   const [refreshToken, setRefreshToken] = useState(null);
-
-  const authHeaders = () => ({
-    'Content-Type': 'application/json',
-    ...(accessToken && {
-      Authorization: `Bearer ${accessToken}`,
-    }),
-  });
 
   const login = async (email, password) => {
     const options = {
@@ -107,7 +110,7 @@ export function AuthProvider({ children }) {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
-        headers: authHeaders(),
+        headers: getAuthHeaders(),
       });
     } catch {
       // Ignore logout errors
