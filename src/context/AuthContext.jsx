@@ -2,7 +2,6 @@ import React, { createContext, useState } from 'react';
 
 export const AuthContext = createContext(null);
 
-
 export function AuthProvider({ children }) {
   const API_BASE_URL =
     import.meta.env.VITE_API_URL ||
@@ -27,6 +26,13 @@ export function AuthProvider({ children }) {
 
   // Refresh token is stored as an HttpOnly cookie on the backend
   const [refreshToken, setRefreshToken] = useState(null);
+
+  const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(accessToken && {
+      Authorization: `Bearer ${accessToken}`,
+    }),
+  });
 
   const login = async (email, password) => {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -111,11 +117,7 @@ export function AuthProvider({ children }) {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          Authorization: accessToken
-            ? `Bearer ${accessToken}`
-            : '',
-        },
+        headers: authHeaders(),
       });
     } catch {
       // Ignore logout errors
