@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FaithBuddies</string>
+    <string name="title_activity_main">FaithBuddies</string>
+    <string name="package_name">com.faithbuddies.app</string>
+    <string name="custom_url_scheme">com.faithbuddies.app</string>
+</resources>
