@@ -1,4 +1,5 @@
 import React, { createContext, useState } from 'react';
+import { CapacitorHttp } from '@capacitor-community/http';
 
 export const AuthContext = createContext(null);
 
@@ -35,30 +36,19 @@ export function AuthProvider({ children }) {
   });
 
   const login = async (email, password) => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    });
+    const options = {
+      url: `${API_BASE_URL}/api/auth/login`,
+      headers: { 'Content-Type': 'application/json' },
+      data: { email, password },
+    };
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    const response = await CapacitorHttp.post(options);
 
-      throw new Error(
-        errorData.message ||
-          errorData.error ||
-          'Login failed'
-      );
+    if (response.status !== 200) {
+      throw new Error(response.data.message || 'Login failed');
     }
 
-    const data = await response.json();
-    const { accessToken, user } = data;
+    const { accessToken, user } = response.data;
 
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('user', JSON.stringify(user));
