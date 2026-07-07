@@ -1,6 +1,48 @@
 // API service for backend communication
+import { CapacitorHttp } from '@capacitor/core';
 import apiClient from './apiClient';
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'https://faith-buddies-backend.onrender.com';
+
+const getStoredAccessToken = () => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('accessToken');
+};
+
+const getAuthHeaders = () => {
+  const token = getStoredAccessToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+const getProfileWithFallback = async () => {
+  const headers = getAuthHeaders();
+  const candidatePaths = ['/api/users/profile', '/api/user/profile'];
+
+  for (const path of candidatePaths) {
+    try {
+      const response = await CapacitorHttp.get({
+        url: `${API_BASE_URL}${path}`,
+        headers,
+      });
+
+      if (response?.status >= 200 && response?.status < 300) {
+        return response.data;
+      }
+    } catch (error) {
+      const status = error?.response?.status || error?.status;
+      if (status === 401 || status === 404) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error('Failed to fetch profile');
+};
 
 // Retry logic for failed requests
 const retryWithBackoff = async (fn, maxRetries = 3) => {
@@ -53,10 +95,8 @@ export const getChatHistory = async (userId) => {
 // Get current user's profile (authenticated via Bearer token)
 export const getCurrentUserProfile = async () => {
   try {
-    const response = await retryWithBackoff(() =>
-      apiClient.get('/api/users/profile')
-    );
-    return response.data;
+    const response = await retryWithBackoff(() => getProfileWithFallback());
+    return response;
   } catch (error) {
     console.error('Error fetching current user profile:', error.message || error);
     throw new Error(error.response?.data?.error || 'Failed to fetch profile');

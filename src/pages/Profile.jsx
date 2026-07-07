@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { CapacitorHttp } from "@capacitor/core";
 
 import { useParams, useNavigate } from "react-router-dom";
 import {
   createUserProfile,
-  getCurrentUserProfile,
   getUserProfile,
   getUserPosts,
   getFollowers,
@@ -52,13 +52,13 @@ const Profile = () => {
 
   const currentUserUid = user?.uid;
 
-  const computeIsFollowingFromFollowers = (followersList) => {
+  const computeIsFollowingFromFollowers = useCallback((followersList) => {
     if (!currentUserUid) return false;
     if (!Array.isArray(followersList)) return false;
 
     // Backend followers shape can be [{ uid, ... }] or [{ _id, ... }]
     return followersList.some((f) => (f?.uid || f?._id) === currentUserUid);
-  };
+  }, [currentUserUid]);
 
   const refreshFollowers = async (targetUid) => {
     const followersList = await getFollowers(targetUid).catch(() => []);
@@ -81,9 +81,29 @@ const Profile = () => {
         let profileData = null;
 
         try {
-          profileData = isOwnProfile
-            ? await getCurrentUserProfile()
-            : await getUserProfile(uid);
+          if (isOwnProfile) {
+            const token = localStorage.getItem("accessToken");
+            const headers = {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            };
+
+            const profileResponse = await CapacitorHttp.get({
+              url: `${API_BASE_URL}/api/users/profile`,
+              headers,
+            }).catch(async () => {
+              return CapacitorHttp.get({
+                url: `${API_BASE_URL}/api/user/profile`,
+                headers,
+              });
+            });
+
+            if (profileResponse?.status >= 200 && profileResponse?.status < 300) {
+              profileData = profileResponse.data;
+            }
+          } else {
+            profileData = await getUserProfile(uid);
+          }
         } catch {
           profileData = null;
         }
