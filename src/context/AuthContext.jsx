@@ -1,7 +1,44 @@
 import React, { createContext, useState } from 'react';
-import { CapacitorHttp } from '@capacitor/core';
 
 export const AuthContext = createContext(null);
+
+const getStoredToken = () => {
+  if (typeof window === 'undefined') return null;
+
+  const candidateKeys = ['accessToken', 'token', 'authToken', 'jwt'];
+  for (const key of candidateKeys) {
+    const value = localStorage.getItem(key);
+    if (value) return value;
+  }
+
+  return null;
+};
+
+const persistAuthData = (token, userData) => {
+  if (typeof window === 'undefined') return;
+
+  if (token) {
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('token', token);
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('jwt', token);
+  }
+
+  if (userData) {
+    localStorage.setItem('user', JSON.stringify(userData));
+  }
+};
+
+const clearAuthData = () => {
+  if (typeof window === 'undefined') return;
+
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('token');
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('jwt');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+};
 
 export function AuthProvider({ children }) {
   const API_BASE_URL =
@@ -22,16 +59,16 @@ export function AuthProvider({ children }) {
   });
 
   const [accessToken, setAccessToken] = useState(() => {
-    return localStorage.getItem('accessToken');
+    return getStoredToken();
   });
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('accessToken');
+    const token = getStoredToken();
     return {
       'Content-Type': 'application/json',
-      ...(token && {
-        Authorization: `Bearer ${token}`,
-      }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { 'x-access-token': token } : {}),
+      ...(token ? { 'x-auth-token': token } : {}),
     };
   };
 
@@ -39,28 +76,32 @@ export function AuthProvider({ children }) {
   const [refreshToken, setRefreshToken] = useState(null);
 
   const login = async (email, password) => {
-    const options = {
-      url: `${API_BASE_URL}/api/auth/login`,
-      headers: { 'Content-Type': 'application/json' },
-      data: { email, password },
-    };
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
 
-    const response = await CapacitorHttp.post(options);
+    const responseData = await response.json().catch(() => ({}));
 
-    if (response.status !== 200) {
-      throw new Error(response.data.message || 'Login failed');
+    if (!response.ok) {
+      throw new Error(responseData.message || responseData.error || 'Login failed');
     }
 
-    const { accessToken, user } = response.data;
+    const payload = responseData.data || responseData;
+    const token = payload.accessToken || payload.token || payload.access_token || payload.jwt;
+    const userData = payload.user || payload.profile || payload.userData || payload.data?.user || null;
 
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('user', JSON.stringify(user));
+    persistAuthData(token, userData);
 
-    setAccessToken(accessToken);
+    setAccessToken(token || null);
     setRefreshToken(null);
-    setUser(user);
+    setUser(userData || null);
 
-    return { accessToken, user };
+    return { accessToken: token, user: userData };
   };
 
   const signUp = async (email, password, name, religion) => {
@@ -78,33 +119,31 @@ export function AuthProvider({ children }) {
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    const responseData = await response.json().catch(() => ({}));
 
+    if (!response.ok) {
       throw new Error(
-        errorData.message ||
-          errorData.error ||
+        responseData.message ||
+          responseData.error ||
           'Sign up failed'
       );
     }
 
-    const data = await response.json();
-    const { accessToken, user } = data;
+    const payload = responseData.data || responseData;
+    const token = payload.accessToken || payload.token || payload.access_token || payload.jwt;
+    const userData = payload.user || payload.profile || payload.userData || payload.data?.user || null;
 
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('user', JSON.stringify(user));
+    persistAuthData(token, userData);
 
-    setAccessToken(accessToken);
+    setAccessToken(token || null);
     setRefreshToken(null);
-    setUser(user);
+    setUser(userData || null);
 
-    return { accessToken, user };
+    return { accessToken: token, user: userData };
   };
 
   const logout = async () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    clearAuthData();
 
     try {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
@@ -125,25 +164,27 @@ export function AuthProvider({ children }) {
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
+      headers: getAuthHeaders(),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    const responseData = await response.json().catch(() => ({}));
 
+    if (!response.ok) {
+      clearAuthData();
       throw new Error(
-        errorData.message ||
-          errorData.error ||
+        responseData.message ||
+          responseData.error ||
           'Refresh failed'
       );
     }
 
-    const data = await response.json();
-    const { accessToken } = data;
+    const payload = responseData.data || responseData;
+    const token = payload.accessToken || payload.token || payload.access_token || payload.jwt;
 
-    localStorage.setItem('accessToken', accessToken);
-    setAccessToken(accessToken);
+    persistAuthData(token, null);
+    setAccessToken(token || null);
 
-    return { accessToken };
+    return { accessToken: token };
   };
 
   const value = {
