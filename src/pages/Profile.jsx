@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { CapacitorHttp } from "@capacitor/core";
-
 import { useParams, useNavigate } from "react-router-dom";
 import {
   createUserProfile,
@@ -10,13 +8,12 @@ import {
   getFollowing,
   updateUserProfile,
   createPost,
-} from "../services/api";
+  toggleFollow,
+} from "../services/firestore";
+import { uploadFile } from "../services/storage";
 import { useAuth } from "../context/useAuth";
 import Post from "../components/Post";
 import { useTheme } from "../context/ThemeContext";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://faith-buddies-backend.onrender.com";
 
 const Profile = () => {
   const { uid } = useParams();
@@ -82,25 +79,7 @@ const Profile = () => {
 
         try {
           if (isOwnProfile) {
-            const token = localStorage.getItem("accessToken");
-            const headers = {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            };
-
-            const profileResponse = await CapacitorHttp.get({
-              url: `${API_BASE_URL}/api/users/profile`,
-              headers,
-            }).catch(async () => {
-              return CapacitorHttp.get({
-                url: `${API_BASE_URL}/api/user/profile`,
-                headers,
-              });
-            });
-
-            if (profileResponse?.status >= 200 && profileResponse?.status < 300) {
-              profileData = profileResponse.data;
-            }
+            profileData = await getUserProfile(user.uid);
           } else {
             profileData = await getUserProfile(uid);
           }
@@ -114,7 +93,7 @@ const Profile = () => {
               name:
                 user.displayName || user.email?.split("@")[0] || "New Believer",
               email: user.email,
-              avatar: user.avatar || "",
+              avatar: user.photoURL || "",
               bio: "Faithful believer sharing wisdom and inspiration",
               religion: "Christian",
             });
@@ -162,39 +141,16 @@ const Profile = () => {
     if (isOwnProfile) return;
 
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        console.error("No access token found for follow request");
-        return;
-      }
-
-      const res = await fetch(`${API_BASE_URL}/api/follows/follow/${uid}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || errorData.error || "Failed to follow"
+      const result = await toggleFollow(user.uid, uid);
+      if (result.following) {
+        const followersList = await getFollowers(uid).catch(() => []);
+        setFollowers(followersList || []);
+        setIsFollowing(
+          followersList.some((f) => (f?.uid || f?._id) === user.uid)
         );
+      } else {
+        await refreshFollowers(uid);
       }
-
-      // Re-check followers list and recompute button state
-      await refreshFollowers(uid);
-
-      // Optional: update visible counts if profile has them
-      setProfile((prev) => {
-        if (!prev) return prev;
-        const followersCount = (Array.isArray(followers) ? followers.length : 0) + 0; // recomputed from refetch
-        return {
-          ...prev,
-          followersCount,
-        };
-      });
     } catch (err) {
       console.error("Error following user:", err);
     }
@@ -239,7 +195,14 @@ const Profile = () => {
 
     setIsPosting(true);
     try {
-      const newPost = await createPost(postContent, postImage || null);
+      let imageUrl = null;
+      if (postImage && postImage.startsWith("blob:")) {
+        const file = await fetch(postImage).then((r) => r.blob());
+        const fileName = `${Date.now()}_${file.name}`;
+        imageUrl = await uploadFile(file, `posts/${user.uid}/${fileName}`);
+      }
+
+      const newPost = await createPost(user.uid, postContent, imageUrl);
       setPosts([newPost, ...posts]);
       setPostContent("");
       setPostImage("");
@@ -262,15 +225,17 @@ const Profile = () => {
     if (e.target.files && e.target.files[0]) {
       setIsUploadingAvatar(true);
       try {
-        const avatarUrl = URL.createObjectURL(e.target.files[0]);
-        setAvatarImage(avatarUrl);
+        const file = e.target.files[0];
+        const path = `avatars/${user.uid}/${Date.now()}_${file.name}`;
+        const downloadURL = await uploadFile(file, path);
 
-        await updateUserProfile(uid, { avatar: avatarUrl });
-        setProfile((prev) => ({ ...prev, avatar: avatarUrl }));
+        setAvatarImage(downloadURL);
+        await updateUserProfile(uid, { avatar: downloadURL });
+        setProfile((prev) => ({ ...prev, avatar: downloadURL }));
 
         e.target.value = "";
       } catch (error) {
-        console.error("Error updating avatar:", error);
+        console.error("Error uploading avatar:", error);
         alert("Failed to update avatar. Please try again.");
       } finally {
         setIsUploadingAvatar(false);

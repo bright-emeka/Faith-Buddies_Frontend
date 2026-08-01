@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/useAuth';
-import { createUserProfile } from './services/api.jsx';
+import { createUserProfile, getUserProfile } from './services/firestore';
 import Login from './pages/Login.jsx';
 import Chat from './pages/Chat.jsx';
 import Feed from './pages/Feed.jsx';
@@ -19,26 +19,35 @@ import ProtectedRoute from './components/ProtectedRoute';
 function AppContent() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (!user || !initializing) return;
+
+    const ensureProfile = async () => {
       try {
-        // Create user profile in backend if it doesn't exist
-        createUserProfile(user.uid, {
-          name: user.displayName || user.email?.split('@')[0] || 'User',
-          email: user.email,
-        });
+        const existing = await getUserProfile(user.uid);
+        if (!existing) {
+          await createUserProfile(user.uid, {
+            name: user.displayName || user.email?.split('@')[0] || 'User',
+            email: user.email,
+          });
+        }
       } catch (error) {
-        console.error('Error creating user profile:', error);
+        console.error('Error ensuring user profile:', error);
+      } finally {
+        setInitializing(false);
       }
-    }
-  }, [user]);
+    };
+
+    ensureProfile();
+  }, [user, initializing]);
 
   const handleUserClick = (userId) => {
     navigate(`/profile/${userId}`);
   };
 
-  if (loading) {
+  if (loading || initializing) {
     return <div className="loading-screen">Loading...</div>;
   }
 
@@ -46,7 +55,7 @@ function AppContent() {
     <div className="App">
       {user ? (
         <>
-          <Header 
+          <Header
             userId={user.uid}
             onUserClick={handleUserClick}
           />
@@ -54,7 +63,7 @@ function AppContent() {
             <ProtectedRoute>
               <Routes>
                 <Route path="/feed" element={<Feed />} />
-                <Route path="/chat" element={<ChatHub userEmail={user.email} />} />
+                <Route path="/chat" element={<ChatHub />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/search" element={<Search onUserClick={handleUserClick} />} />
                 <Route path="/groups" element={<Groups />} />

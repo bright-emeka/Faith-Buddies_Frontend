@@ -1,6 +1,6 @@
 // Post component - displays individual post with interactions
 import React, { useState, useEffect } from 'react';
-import { toggleLike, checkLiked, toggleFollow, checkFollowing } from '../services/api';
+import { toggleLike, checkLiked, toggleFollow, checkFollowing } from '../services/firestore';
 import { useAuth } from '../context/useAuth';
 
 const Post = ({ post, onDelete, onUserClick }) => {
@@ -13,11 +13,11 @@ const Post = ({ post, onDelete, onUserClick }) => {
     const checkStatus = async () => {
       if (user && user.uid !== post.userId) {
         try {
-          const likeStatus = await checkLiked(post.id);
-          setLiked(likeStatus.liked);
+          const likeResult = await checkLiked(post.id, user.uid);
+          setLiked(likeResult.liked);
 
-          const followStatus = await checkFollowing(post.userId);
-          setFollowing(followStatus.following);
+          const followResult = await checkFollowing(user.uid, post.userId);
+          setFollowing(followResult.following);
         } catch (error) {
           console.error('Error checking post status:', error);
         }
@@ -29,7 +29,7 @@ const Post = ({ post, onDelete, onUserClick }) => {
 
   const handleLike = async () => {
     try {
-      const result = await toggleLike(post.id);
+      const result = await toggleLike(post.id, user.uid);
       setLiked(result.liked);
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -38,7 +38,7 @@ const Post = ({ post, onDelete, onUserClick }) => {
 
   const handleFollow = async () => {
     try {
-      const result = await toggleFollow(post.userId);
+      const result = await toggleFollow(user.uid, post.userId);
       setFollowing(result.following);
     } catch (error) {
       console.error('Error toggling follow:', error);
