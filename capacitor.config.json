@@ -1,10 +1,5 @@
 {
   "appId": "com.faithbuddies.app",
   "appName": "FaithBuddies",
-  "webDir": "dist",
-  "plugins": {
-    "CapacitorHttp": {
-      "enabled": true
-    }
-  }
+  "webDir": "dist"
 }
