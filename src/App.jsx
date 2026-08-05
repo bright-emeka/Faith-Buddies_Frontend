@@ -22,7 +22,10 @@ function AppContent() {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    if (!user || !initializing) return;
+    if (!user) {
+      setInitializing(false);
+      return;
+    }
 
     const ensureProfile = async () => {
       try {
@@ -41,7 +44,7 @@ function AppContent() {
     };
 
     ensureProfile();
-  }, [user, initializing]);
+  }, [user]);
 
   const handleUserClick = (userId) => {
     navigate(`/profile/${userId}`);
