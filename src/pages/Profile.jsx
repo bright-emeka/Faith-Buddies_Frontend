@@ -57,11 +57,31 @@ const Profile = () => {
     return followersList.some((f) => (f?.uid || f?._id) === currentUserUid);
   }, [currentUserUid]);
 
-  const refreshFollowers = async (targetUid) => {
+const refreshFollowers = async (targetUid) => {
     const followersList = await getFollowers(targetUid).catch(() => []);
     setFollowers(followersList || []);
     setIsFollowing(computeIsFollowingFromFollowers(followersList || []));
   };
+
+  // The "follows" collection only stores UIDs, so enrich each item with the
+  // user's name/avatar from the users collection.
+  const enrichUsers = useCallback(async (followList) => {
+    if (!Array.isArray(followList)) return [];
+    const enriched = await Promise.all(
+      followList.map(async (f) => {
+        const uid = f?.uid || f?._id || f?.followerUid || f?.targetUid;
+        if (!uid) return f;
+        try {
+          const profile = await getUserProfile(uid);
+          if (profile) return { ...f, uid, name: profile.name, avatar: profile.avatar };
+} catch {
+          // ignore - fall back to raw follow doc
+        }
+        return { ...f, uid };
+      })
+    );
+    return enriched;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,7 +103,7 @@ const Profile = () => {
           } else {
             profileData = await getUserProfile(userId);
           }
-        } catch (error) {
+} catch {
           profileData = null;
           
           // If it's the user's own profile and fetch failed, try syncing first
@@ -143,17 +163,25 @@ const Profile = () => {
         if (cancelled) return;
         setProfile(profileData);
 
-        // 2) Fetch posts + followers + following
+// 2) Fetch posts + followers + following
         const [userPosts, followersList, followingList] = await Promise.all([
           getUserPosts(userId).catch(() => []),
           getFollowers(userId).catch(() => []),
-          getFollowing(userId).catch(() => [],
+          getFollowing(userId).catch(() => []),
+        ]);
+
+if (cancelled) return;
+        setPosts(userPosts || []);
+
+        // Enrich followers/following with user details (name/avatar)
+        const [enrichedFollowers, enrichedFollowing] = await Promise.all([
+          enrichUsers(followersList || []),
+          enrichUsers(followingList || []),
         ]);
 
         if (cancelled) return;
-        setPosts(userPosts || []);
-        setFollowers(followersList || []);
-        setFollowing(followingList || []);
+        setFollowers(enrichedFollowers);
+        setFollowing(enrichedFollowing);
 
         // 3) Follow state based on whether currentUser is in followers list
         if (!isOwnProfile) {
@@ -178,13 +206,14 @@ const Profile = () => {
     if (!userId || userId === "undefined") return;
     if (isOwnProfile) return;
 
-    try {
+try {
       const result = await toggleFollow(user.uid, userId);
       if (result.following) {
         const followersList = await getFollowers(userId).catch(() => []);
-        setFollowers(followersList || []);
+        const enriched = await enrichUsers(followersList || []);
+        setFollowers(enriched);
         setIsFollowing(
-          followersList.some((f) => (f?.uid || f?._id) === user.uid)
+          enriched.some((f) => (f?.uid || f?._id) === user.uid)
         );
       } else {
         await refreshFollowers(userId);
