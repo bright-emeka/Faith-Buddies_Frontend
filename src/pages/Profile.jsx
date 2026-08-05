@@ -16,7 +16,7 @@ import Post from "../components/Post";
 import { useTheme } from "../context/ThemeContext";
 
 const Profile = () => {
-  const { uid } = useParams();
+  const { userId } = useParams();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -45,7 +45,7 @@ const Profile = () => {
   const [avatarImage, setAvatarImage] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  const isOwnProfile = user && user.uid === uid;
+  const isOwnProfile = user && user.uid === userId;
 
   const currentUserUid = user?.uid;
 
@@ -67,7 +67,7 @@ const Profile = () => {
     let cancelled = false;
 
     const load = async () => {
-      if (!uid || uid === "undefined") {
+      if (!userId || userId === "undefined") {
         setLoading(false);
         return;
       }
@@ -81,10 +81,48 @@ const Profile = () => {
           if (isOwnProfile) {
             profileData = await getUserProfile(user.uid);
           } else {
-            profileData = await getUserProfile(uid);
+            profileData = await getUserProfile(userId);
           }
-        } catch {
+        } catch (error) {
           profileData = null;
+          
+          // If it's the user's own profile and fetch failed, try syncing first
+          if (isOwnProfile && user) {
+            try {
+              console.log('Profile fetch failed, attempting sync...');
+              // Call the sync endpoint to ensure profile exists
+              const token = await user.getIdToken();
+              const response = await fetch(`${import.meta.env.VITE_API_URL}/users/sync`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              
+              if (response.ok) {
+                const syncedData = await response.json();
+                profileData = syncedData;
+                console.log('Profile synced successfully');
+              }
+            } catch (syncError) {
+              console.error('Sync failed:', syncError);
+              // If sync fails, try creating the profile locally
+              try {
+                profileData = await createUserProfile(user.uid, {
+                  name:
+                    user.displayName || user.email?.split("@")[0] || "New Believer",
+                  email: user.email,
+                  avatar: user.photoURL || "",
+                  bio: "Faithful believer sharing wisdom and inspiration",
+                  religion: "Christian",
+                });
+              } catch (createError) {
+                console.error('Profile creation failed:', createError);
+                profileData = null;
+              }
+            }
+          }
         }
 
         if (!profileData && isOwnProfile && user) {
@@ -107,9 +145,9 @@ const Profile = () => {
 
         // 2) Fetch posts + followers + following
         const [userPosts, followersList, followingList] = await Promise.all([
-          getUserPosts(uid).catch(() => []),
-          getFollowers(uid).catch(() => []),
-          getFollowing(uid).catch(() => []),
+          getUserPosts(userId).catch(() => []),
+          getFollowers(userId).catch(() => []),
+          getFollowing(userId).catch(() => [],
         ]);
 
         if (cancelled) return;
@@ -134,22 +172,22 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [uid, isOwnProfile, user, computeIsFollowingFromFollowers]);
+  }, [userId, isOwnProfile, user, computeIsFollowingFromFollowers]);
 
   const handleFollow = async () => {
-    if (!uid || uid === "undefined") return;
+    if (!userId || userId === "undefined") return;
     if (isOwnProfile) return;
 
     try {
-      const result = await toggleFollow(user.uid, uid);
+      const result = await toggleFollow(user.uid, userId);
       if (result.following) {
-        const followersList = await getFollowers(uid).catch(() => []);
+        const followersList = await getFollowers(userId).catch(() => []);
         setFollowers(followersList || []);
         setIsFollowing(
           followersList.some((f) => (f?.uid || f?._id) === user.uid)
         );
       } else {
-        await refreshFollowers(uid);
+        await refreshFollowers(userId);
       }
     } catch (err) {
       console.error("Error following user:", err);
@@ -179,7 +217,7 @@ const Profile = () => {
 
   const handleSaveEdit = async () => {
     try {
-      await updateUserProfile(uid, editForm);
+      await updateUserProfile(userId, editForm);
       setProfile((prev) => ({ ...prev, ...editForm }));
       setIsEditing(false);
     } catch (error) {
@@ -230,7 +268,7 @@ const Profile = () => {
         const downloadURL = await uploadFile(file, path);
 
         setAvatarImage(downloadURL);
-        await updateUserProfile(uid, { avatar: downloadURL });
+        await updateUserProfile(userId, { avatar: downloadURL });
         setProfile((prev) => ({ ...prev, avatar: downloadURL }));
 
         e.target.value = "";
@@ -247,7 +285,7 @@ const Profile = () => {
     <div className="error-container">
       <h2>User not found</h2>
       <p>
-        We couldn't find a user with the ID: <strong>{uid}</strong>
+        We couldn't find a user with the ID: <strong>{userId}</strong>
       </p>
       <button onClick={() => navigate("/" )}>Go Home</button>
     </div>
