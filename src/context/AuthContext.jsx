@@ -105,11 +105,8 @@ export function AuthProvider({ children }) {
             'Authorization': `Bearer ${idToken}`,
           },
           body: JSON.stringify({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
             displayName: name,
             photoURL: firebaseUser.photoURL,
-            provider: 'firebase',
           }),
         });
 
