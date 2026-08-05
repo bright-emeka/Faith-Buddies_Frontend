@@ -54,6 +54,25 @@ export function AuthProvider({ children }) {
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = credential.user;
+      
+      // Sync user to ensure Firestore document exists
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        await fetch(`${import.meta.env.VITE_API_URL}/users/sync`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+          }),
+        });
+      } catch (syncError) {
+        console.warn('User sync failed (non-critical):', syncError);
+      }
+
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -75,6 +94,34 @@ export function AuthProvider({ children }) {
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       await credential.user.updateProfile({ displayName: name });
       const firebaseUser = credential.user;
+
+      // Register user in backend to create Firestore document
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: name,
+            photoURL: firebaseUser.photoURL,
+            provider: 'firebase',
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create user profile');
+        }
+      } catch (registerError) {
+        console.error('Profile creation failed:', registerError);
+        throw registerError;
+      }
+
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
