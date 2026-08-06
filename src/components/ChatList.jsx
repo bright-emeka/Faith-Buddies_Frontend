@@ -27,7 +27,7 @@ const ChatList = ({ chats = [], onSelectChat = () => {} }) => {
       lastMessage: 'Ready for Study sesh tonight?',
       time: 'Yesterday',
       unread: false,
-      avatarUrl: 'https://media.licdn.com/dms/image/v2/D4D35AQHYcSUKD25rlg/profile-framedphoto-shrink_400_400/B4DZ2Qvh.kIEAc-/0/1776249872772?e=1778234400&v=beta&t=dqlS_qfF7OyhBCegIzMKZBZJLfXEPi3Jjwa2B_ZSs0I',
+      avatarUrl: '',
     },
      {
       id: '3',

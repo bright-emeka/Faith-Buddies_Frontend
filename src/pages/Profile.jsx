@@ -106,11 +106,11 @@ const refreshFollowers = async (targetUid) => {
 } catch {
           profileData = null;
           
-          // If it's the user's own profile and fetch failed, try syncing first
+          
           if (isOwnProfile && user) {
             try {
               console.log('Profile fetch failed, attempting sync...');
-              // Call the sync endpoint to ensure profile exists
+             
               const token = await user.getIdToken();
               const response = await fetch(`${import.meta.env.VITE_API_URL}/users/sync`, {
                 method: 'POST',
