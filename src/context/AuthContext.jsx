@@ -7,6 +7,7 @@ import {
   sendPasswordResetEmail,
   onAuthStateChanged,
 } from 'firebase/auth';
+import { createUserProfile } from '../services/firestore';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
@@ -95,7 +96,8 @@ export function AuthProvider({ children }) {
       await credential.user.updateProfile({ displayName: name });
       const firebaseUser = credential.user;
 
-      // Register user in backend to create Firestore document
+// Register user in backend to create Firestore document
+      let profileCreated = false;
       try {
         const idToken = await firebaseUser.getIdToken();
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
@@ -114,9 +116,25 @@ export function AuthProvider({ children }) {
           const error = await response.json();
           throw new Error(error.error || 'Failed to create user profile');
         }
+        profileCreated = true;
       } catch (registerError) {
-        console.error('Profile creation failed:', registerError);
-        throw registerError;
+        console.warn('Backend profile creation failed, falling back to client-side create:', registerError);
+      }
+
+      // If backend unavailable, create the profile directly via Firestore so
+      // signup never fails due to backend availability.
+      if (!profileCreated) {
+        try {
+          await createUserProfile(firebaseUser.uid, {
+            name: name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New Believer',
+            email: firebaseUser.email,
+            avatar: firebaseUser.photoURL || '',
+            bio: 'Faithful believer sharing wisdom and inspiration',
+            religion: 'Christian',
+          });
+        } catch (createError) {
+          console.warn('Client-side profile creation failed (Firestore rules may not be deployed):', createError);
+        }
       }
 
       const userData = {
