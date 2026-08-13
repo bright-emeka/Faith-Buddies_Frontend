@@ -311,20 +311,49 @@ try {
   };
 
   const errorUi = (
-    <div className="error-container">
-      <h2>User not found</h2>
-      <p>
-        We couldn't find a user with the ID: <strong>{userId}</strong>
+    <div className="error-container" style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '60vh',
+      textAlign: 'center',
+      gap: '1rem'
+    }}>
+      <div style={{
+        width: 64,
+        height: 64,
+        borderRadius: 'var(--radius-full)',
+        background: 'rgba(239, 68, 68, 0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '2rem'
+      }}>
+        😔
+      </div>
+      <h2 style={{ color: 'var(--color-text)', fontWeight: 700 }}>User not found</h2>
+      <p style={{ color: 'var(--color-text-secondary)', maxWidth: 400 }}>
+        We couldn't find a user with the ID: <strong style={{ color: 'var(--color-text)' }}>{userId}</strong>
       </p>
-      <button onClick={() => navigate("/" )}>Go Home</button>
+      <button onClick={() => navigate("/" )} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
+        Go Home
+      </button>
     </div>
   );
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loader"></div>
-        <p>Loading profile...</p>
+      <div className="loading-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh',
+        gap: '1rem'
+      }}>
+        <div className="spinner" style={{ width: 40, height: 40, borderWidth: 3 }} />
+        <p style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>Loading profile...</p>
       </div>
     );
   }
