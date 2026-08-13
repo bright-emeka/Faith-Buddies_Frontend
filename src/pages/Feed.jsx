@@ -39,7 +39,12 @@ const Feed = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading feed...</div>;
+    return (
+      <div className="loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+        <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
+        <p style={{ color: 'var(--color-text-secondary)' }}>Loading feed...</p>
+      </div>
+    );
   }
 
   return (
