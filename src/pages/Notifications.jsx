@@ -1,5 +1,18 @@
 import React, { useMemo, useState } from 'react';
 
+const notificationRowStyle = {
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
+  boxShadow: 'var(--shadow-xs)',
+  transition: 'all var(--transition-fast)',
+};
+
+const notificationRowHoverStyle = {
+  boxShadow: 'var(--shadow-sm)',
+  borderColor: 'var(--color-primary)',
+  transform: 'translateX(4px)',
+};
+
 const Notifications = () => {
   // Demo UI data; wire to API later if/when backend endpoints exist.
   const [filter, setFilter] = useState('all');
@@ -80,92 +93,102 @@ const Notifications = () => {
         </div>
       </header>
 
-      <div className="card" style={{ padding: 16 }}>
-        {filtered.length === 0 ? (
-          <div className="empty-state">
-            <h2 style={{ fontSize: 18, marginBottom: 6 }}>Nothing here yet</h2>
-            <p style={{ opacity: 0.85 }}>
-              When new activity happens, it will show up in your notifications.
-            </p>
-          </div>
-        ) : (
-          <div>
-            {filtered.map((n) => (
+        <div className="card" style={{ padding: 16 }}>
+          {filtered.length === 0 ? (
+            <div className="empty-state">
+              <h2 style={{ fontSize: 18, marginBottom: 6, color: 'var(--color-text)', fontWeight: 700 }}>Nothing here yet</h2>
+              <p style={{ opacity: 0.85, color: 'var(--color-text-muted)' }}>
+                When new activity happens, it will show up in your notifications.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {filtered.map((n) => (
               <div
                 key={n.id}
                 className="ui-notification-row"
                 style={{
+                  ...notificationRowStyle,
                   display: 'flex',
                   gap: 12,
-                  padding: '12px 12px',
+                  padding: '14px 16px',
                   borderRadius: 14,
                   alignItems: 'flex-start',
-                  border: '1px solid transparent',
                   marginBottom: 10,
                 }}
+                onMouseEnter={(e) => {
+                  Object.assign(e.currentTarget.style, notificationRowHoverStyle);
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = notificationRowStyle.boxShadow;
+                  e.currentTarget.style.borderColor = notificationRowStyle.borderColor;
+                  e.currentTarget.style.transform = 'none';
+                }}
               >
-                <div
-                  aria-hidden="true"
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    background:
-                      n.type === 'faith'
-                        ? 'var(--accent-bg)'
-                        : n.type === 'community'
-                          ? 'rgba(52,152,219,0.18)'
-                          : 'rgba(170,59,255,0.12)',
-                    color:
-                      n.type === 'faith'
-                        ? 'var(--accent)'
-                        : n.type === 'community'
-                          ? '#2f80ed'
-                          : 'var(--accent)',
-                  }}
-                >
-                  {n.type === 'faith' ? '✦' : n.type === 'community' ? '☺' : '◎'}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <div style={{ fontWeight: 800, color: 'var(--text-h)' }}>
-                      {n.title}
-                    </div>
-                    {n.unread && (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          padding: '2px 8px',
-                          borderRadius: 999,
-                          background: 'var(--accent-bg)',
-                          border: '1px solid var(--accent-border)',
-                          color: 'var(--accent)',
-                          fontWeight: 800,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Unread
-                      </span>
-                    )}
-                    <div className="muted" style={{ marginLeft: 'auto', fontSize: 12 }}>
-                      {n.time}
-                    </div>
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      fontSize: '1.1rem',
+                      background:
+                        n.type === 'faith'
+                          ? 'var(--accent-bg)'
+                          : n.type === 'community'
+                            ? 'rgba(52,152,219,0.18)'
+                            : 'rgba(170,59,255,0.12)',
+                      color:
+                        n.type === 'faith'
+                          ? 'var(--accent)'
+                          : n.type === 'community'
+                            ? '#2f80ed'
+                            : 'var(--accent)',
+                      flexShrink: 0
+                    }}
+                  >
+                    {n.type === 'faith' ? '✦' : n.type === 'community' ? '☺' : '◎'}
                   </div>
 
-                  <div className="muted" style={{ marginTop: 6, fontSize: 14, lineHeight: 1.4 }}>
-                    {n.body}
+                  <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 800, color: 'var(--text-h)' }}>
+                        {n.title}
+                      </div>
+                      {n.unread && (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            padding: '2px 10px',
+                            borderRadius: 999,
+                            background: 'var(--accent-bg)',
+                            border: '1px solid var(--accent-border)',
+                            color: 'var(--accent)',
+                            fontWeight: 800,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          Unread
+                        </span>
+                      )}
+                      <div className="muted" style={{ marginLeft: 'auto', fontSize: 12 }}>
+                        {n.time}
+                      </div>
+                    </div>
+
+                    <div className="muted" style={{ marginTop: 6, fontSize: 14, lineHeight: 1.5 }}>
+                      {n.body}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
     </section>
   );
 };
