@@ -54,13 +54,48 @@ const Search = ({ onUserClick }) => {
 
       <div className="search-results">
         {query.trim() === '' ? (
-          <p className="search-placeholder">
-            Enter a search term to find users across Faith Buddies
-          </p>
+          <div className="empty-state">
+            <div style={{
+              width: 64,
+              height: 64,
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-border-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              fontSize: '1.75rem'
+            }}>
+              🔍
+            </div>
+            <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)' }}>
+              Enter a search term to find users across Faith Buddies
+            </p>
+          </div>
         ) : loading ? (
-          <div className="loading">Searching...</div>
+          <div className="loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+            <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
+            <p style={{ color: 'var(--color-text-secondary)' }}>Searching...</p>
+          </div>
         ) : users.length === 0 ? (
-          <p className="no-results">No results found for "{query}". Try a different search term.</p>
+          <div className="empty-state">
+            <div style={{
+              width: 64,
+              height: 64,
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-border-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              fontSize: '1.75rem'
+            }}>
+              😕
+            </div>
+            <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)' }}>
+              No results found for "{query}". Try a different search term.
+            </p>
+          </div>
         ) : (
           <div className="results-list">
             <h2>Users ({users.length})</h2>
