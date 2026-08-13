@@ -86,7 +86,19 @@ const Post = ({ post, onDelete, onUserClick }) => {
         )}
       </div>
 
-      {showComments && <div className="post-comments">Comments will load here</div>}
+      {showComments && (
+        <div className="post-comments" style={{
+          background: 'var(--color-bg)',
+          borderTop: '1px solid var(--color-border)',
+          marginTop: '1rem',
+          paddingTop: '1rem',
+          borderRadius: '0 0 var(--radius-lg) var(--radius-lg)'
+        }}>
+          <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '1rem' }}>
+            Comments will load here
+          </div>
+        </div>
+      )}
     </div>
   );
 };
