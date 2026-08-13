@@ -91,10 +91,36 @@ const Groups = () => {
       
       <div className="groups-content">
         {loading ? (
-          <p>Loading groups...</p>
+          <div className="loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+            <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
+            <p style={{ color: 'var(--color-text-secondary)' }}>Loading groups...</p>
+          </div>
         ) : (
           groups.length === 0 ? (
-            <p className="empty-groups">Youre not part of any groups yet. Create your first group!</p>
+            <div className="empty-groups" style={{
+              textAlign: 'center',
+              color: 'var(--color-text-muted)',
+              fontStyle: 'italic',
+              padding: '3rem',
+              background: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border)'
+            }}>
+              <div style={{
+                width: 64,
+                height: 64,
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--color-border-light)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem',
+                fontSize: '1.75rem'
+              }}>
+                👥
+              </div>
+              <p style={{ fontSize: '1.05rem', margin: 0 }}>You're not part of any groups yet. Create your first group!</p>
+            </div>
           ) : (
             <div className="groups-list">
               {groups.map(group => (
