@@ -27,55 +27,61 @@ const Header = ({ userId, onUserClick }) => {
             type="button"
             className={`nav-item ${isActive('/feed') ? 'active' : ''}`}
             onClick={() => navigate('/feed')}
+            title="Feed"
           >
             <span className="icon">📰</span>
-            <span> </span>
+            <span>Feed</span>
           </button>
 
           <button
             type="button"
             className={`nav-item ${isActive('/chat') ? 'active' : ''}`}
             onClick={() => navigate('/chat')}
+            title="Messages"
           >
             <span className="icon">💬</span>
-            <span> </span>
+            <span>Chat</span>
           </button>
 
-      <button
-        type="button"
-        className={`nav-item ${isActive('/notifications') ? 'active' : ''}`}
-        onClick={() => navigate('/notifications')}
-      >
-        <span className="icon">🔔</span>
-        <span> </span>
-      </button>
+          <button
+            type="button"
+            className={`nav-item ${isActive('/notifications') ? 'active' : ''}`}
+            onClick={() => navigate('/notifications')}
+            title="Notifications"
+          >
+            <span className="icon">🔔</span>
+            <span>Alerts</span>
+          </button>
 
-      <button
-        type="button"
-        className={`nav-item ${isActive('/search') ? 'active' : ''}`}
-        onClick={() => navigate('/search')}
-      >
-        <span className="icon">🔍</span>
-        <span> </span>
-      </button>
+          <button
+            type="button"
+            className={`nav-item ${isActive('/search') ? 'active' : ''}`}
+            onClick={() => navigate('/search')}
+            title="Search"
+          >
+            <span className="icon">🔍</span>
+            <span>Search</span>
+          </button>
 
-      <button
-        type="button"
-        className={`nav-item ${isActive('/groups') ? 'active' : ''}`}
-        onClick={() => navigate('/groups')}
-      >
-        <span className="icon">👥</span>
-        <span> </span>
-      </button>
+          <button
+            type="button"
+            className={`nav-item ${isActive('/groups') ? 'active' : ''}`}
+            onClick={() => navigate('/groups')}
+            title="Groups"
+          >
+            <span className="icon">👥</span>
+            <span>Groups</span>
+          </button>
 
-      <button
-        type="button"
-        className={`nav-item ${isActive('/profile') ? 'active' : ''}`}
-        onClick={() => onUserClick(userId)}
-      >
-        <span className="icon">👤</span>
-        <span> </span>
-      </button>
+          <button
+            type="button"
+            className={`nav-item ${isActive('/profile') ? 'active' : ''}`}
+            onClick={() => onUserClick(userId)}
+            title="Profile"
+          >
+            <span className="icon">👤</span>
+            <span>Profile</span>
+          </button>
         </div>
       </div>
     </header>
