@@ -44,11 +44,31 @@ const Discover = ({ onUserClick }) => {
         />
       </div>
 
-      {loading && <div className="loading">Searching...</div>}
+      {loading && (
+        <div className="loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
+          <p style={{ color: 'var(--color-text-secondary)' }}>Searching...</p>
+        </div>
+      )}
 
       {!loading && users.length === 0 && searchQuery && (
         <div className="empty-state">
-          <p>No users found for "{searchQuery}"</p>
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--color-border-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1rem',
+            fontSize: '1.75rem'
+          }}>
+            😕
+          </div>
+          <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)' }}>
+            No users found for "{searchQuery}"
+          </p>
         </div>
       )}
 
@@ -66,7 +86,22 @@ const Discover = ({ onUserClick }) => {
 
       {!searchQuery && (
         <div className="empty-state">
-          <p>Search for users to discover the community</p>
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--color-border-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1rem',
+            fontSize: '1.75rem'
+          }}>
+            🌟
+          </div>
+          <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)' }}>
+            Search for users to discover the community
+          </p>
         </div>
       )}
     </div>
