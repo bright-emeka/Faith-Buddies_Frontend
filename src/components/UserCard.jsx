@@ -33,7 +33,7 @@ const UserCard = ({ user, onUserClick }) => {
   };
 
   return (
-    <div className="user-card" onClick={() => onUserClick(user.uid)}>
+    <div className="user-card" onClick={() => onUserClick(user.uid)} style={{ cursor: 'pointer' }}>
       <img src={user.avatar} alt={user.name} className="user-card-avatar" />
       <h3>{user.name}</h3>
       <p className="user-card-bio">{user.bio || 'No bio yet'}</p>
